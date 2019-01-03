@@ -319,13 +319,16 @@ exec 2> $LOGERR     # stderr replaced with file $LOGERR.
 
 # Database dump function
 dbdump () {
+	rm -f $2
 	touch $2
 	chmod 600 $2
-	if [ -n "$SU_USERNAME" ]; then
-		su $SU_USERNAME -c "pg_dump $PGHOST $OPT $1" > $2
-	else
-		pg_dump --username=$USERNAME $PGHOST $OPT $1 > $2
-	fi
+	for db in $1 ; do
+		if [ -n "$SU_USERNAME" ]; then
+			su $SU_USERNAME -c "pg_dump $PGHOST $OPT $db" >> $2
+		else
+			pg_dump --username=$USERNAME $PGHOST $OPT $db >> $2
+		fi
+	done
 	return 0
 }
 
@@ -397,8 +400,8 @@ if [ "$DBNAMES" = "all" ]; then
 	do
 		DBNAMES=`echo $DBNAMES | sed "s/\b$exclude\b//g"`
 	done
-
-        MDBNAMES=$DBNAMES
+	DBNAMES="$(echo $DBNAMES| tr '\n' ' ')"
+	MDBNAMES=$DBNAMES
 fi
 	
 echo ======================================================================
