@@ -627,8 +627,21 @@ then
 	ATTSIZE=`du -c $BACKUPFILES | grep "[[:digit:][:space:]]total$" |sed s/\s*total//`
 	if [ $MAXATTSIZE -ge $ATTSIZE ]
 	then
-		BACKUPFILES=`echo "$BACKUPFILES" | sed -e "s# # -a #g"`	#enable multiple attachments
-		mutt -s "PostgreSQL Backup Log and SQL Files for $HOST - $DATE" $BACKUPFILES $MAILADDR < $LOGFILE		#send via mutt
+		if which biabam >/dev/null 2>&1
+		then
+			BACKUPFILES=$(echo $BACKUPFILES | sed -r -e 's#\s+#,#g')
+			biabam -s "PostgreSQL Backup Log and SQL Files for $HOST - $DATE" $BACKUPFILES $MAILADDR < $LOGFILE
+		elif which heirloom-mailx >/dev/null 2>&1
+		then
+			BACKUPFILES=$(echo $BACKUPFILES | sed -e 's# # -a #g')
+			heirloom-mailx -s "PostgreSQL Backup Log and SQL Files for $HOST - $DATE" $BACKUPFILES $MAILADDR < $LOGFILE
+		elif which mutt >/dev/null 2>&1
+		then
+			BACKUPFILES=$(echo $BACKUPFILES | sed -e 's# # -a #g')
+			mutt -s "PostgreSQL Backup Log and SQL Files for $HOST - $DATE" $BACKUPFILES $MAILADDR < $LOGFILE
+		else
+			cat "$LOGFILE" | mail -s "WARNING! - Enable to send PostgreSQL Backup dumps, no suitable mail client found on $HOST - $DATE" $MAILADDR
+		fi
 	else
 		cat "$LOGFILE" | mail -s "WARNING! - PostgreSQL Backup exceeds set maximum attachment size on $HOST - $DATE" $MAILADDR
 	fi
