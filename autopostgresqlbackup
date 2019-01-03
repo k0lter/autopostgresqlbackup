@@ -90,11 +90,22 @@ COMMCOMP=0
 # Additionally keep a copy of the most recent backup in a seperate directory.
 LATEST=no
 
+# OPT string for use with pg_dump ( see man pg_dump )
+OPT=""
+
 # Command to run before backups (uncomment to use)
 #PREBACKUP="/etc/postgresql-backup-pre"
 
 # Command run after backups (uncomment to use)
 #POSTBACKUP="/etc/postgresql-backup-post"
+
+# ===============================
+# === Debian specific options ===
+#================================
+
+if [ -f /etc/default/autopostgresqlbackup ]; then
+	. /etc/default/autopostgresqlbackup
+fi
 
 #=====================================================================
 # Options documentation
@@ -256,7 +267,6 @@ VER=1.0							# Version Number
 LOGFILE=$BACKUPDIR/$DBHOST-`date +%N`.log			# Logfile Name
 LOGERR=$BACKUPDIR/ERRORS_$DBHOST-`date +%N`.log		# Logfile Name
 BACKUPFILES=""
-OPT=""						# OPT string for use with pg_dump ( see man pg_dump )
 
 # Add --compress pg_dump option to $OPT
 if [ "$COMMCOMP" -gt 0 ];
