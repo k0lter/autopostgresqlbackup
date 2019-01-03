@@ -321,7 +321,11 @@ exec 2> $LOGERR     # stderr replaced with file $LOGERR.
 dbdump () {
 	touch $2
 	chmod 600 $2
-	pg_dump --username=$USERNAME $PGHOST $OPT $1 > $2
+	if [ -n "$SU_USERNAME" ]; then
+		su $SU_USERNAME -c "pg_dump $PGHOST $OPT $1" > $2
+	else
+		pg_dump --username=$USERNAME $PGHOST $OPT $1 > $2
+	fi
 	return 0
 }
 
@@ -382,7 +386,11 @@ fi
 
 # If backing up all DBs on the server
 if [ "$DBNAMES" = "all" ]; then
-	DBNAMES="`psql -U $USERNAME $PGHOST -l -A -F: | sed -ne "/:/ { /Name:Owner/d; /template0/d; s/:.*$//; p }"`"
+	if [ -n "$SU_USERNAME" ]; then
+		DBNAMES="$(su $SU_USERNAME -c "LANG=C psql -U $USERNAME $PGHOST -l -A -F: | sed -ne '/:/ { /Name:Owner/d; /template0/d; s/:.*$//; p }'")"
+	else
+		DBNAMES="`LANG=C psql -U $USERNAME $PGHOST -l -A -F: | sed -ne "/:/ { /Name:Owner/d; /template0/d; s/:.*$//; p }"`"
+	fi
 	
 	# If DBs are excluded
 	for exclude in $DBEXCLUDE
