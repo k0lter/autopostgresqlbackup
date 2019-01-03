@@ -470,7 +470,7 @@ echo ======================================================================
 	else
 		echo Daily Backup of Database \( $DB \)
 		echo Rotating last weeks Backup...
-		eval rm -fv "$BACKUPDIR/daily/$DB/*.$DOW.sql.*" 
+		eval rm -fv "$BACKUPDIR/daily/$DB/*.$DOW.sql*"
 		echo
 			dbdump "$DB" "$BACKUPDIR/daily/$DB/${DB}_$DATE.$DOW.sql"
 			compression "$BACKUPDIR/daily/$DB/${DB}_$DATE.$DOW.sql"
@@ -518,7 +518,7 @@ echo ======================================================================
 		echo Daily Backup of Databases \( $DBNAMES \)
 		echo
 		echo Rotating last weeks Backup...
-		eval rm -fv "$BACKUPDIR/daily/*.$DOW.sql.*" 
+		eval rm -fv "$BACKUPDIR/daily/*.$DOW.sql*"
 		echo
 			dbdump "$DBNAMES" "$BACKUPDIR/daily/$DATE.$DOW.sql"
 			compression "$BACKUPDIR/daily/$DATE.$DOW.sql"
