@@ -96,6 +96,9 @@ LATEST=no
 # OPT string for use with pg_dump ( see man pg_dump )
 OPT=""
 
+# Backup files extension
+EXT="sql"
+
 # Command to run before backups (uncomment to use)
 #PREBACKUP="/etc/postgresql-backup-pre"
 
@@ -443,9 +446,9 @@ echo ======================================================================
 				mkdir -p "$BACKUPDIR/monthly/$MDB"
 			fi
 			echo Monthly Backup of $MDB...
-				dbdump "$MDB" "$BACKUPDIR/monthly/$MDB/${MDB}_$DATE.$M.$MDB.sql"
-				compression "$BACKUPDIR/monthly/$MDB/${MDB}_$DATE.$M.$MDB.sql"
-				BACKUPFILES="$BACKUPFILES $BACKUPDIR/monthly/$MDB/${MDB}_$DATE.$M.$MDB.sql$SUFFIX"
+				dbdump "$MDB" "$BACKUPDIR/monthly/$MDB/${MDB}_$DATE.$M.$MDB.$EXT"
+				compression "$BACKUPDIR/monthly/$MDB/${MDB}_$DATE.$M.$MDB.$EXT"
+				BACKUPFILES="$BACKUPFILES $BACKUPDIR/monthly/$MDB/${MDB}_$DATE.$M.$MDB.$EXT$SUFFIX"
 			echo ----------------------------------------------------------------------
 		done
 	fi
@@ -479,20 +482,20 @@ echo ======================================================================
 			fi
 		rm -fv "$BACKUPDIR/weekly/$DB/${DB}_week.$REMW".*
 		echo
-			dbdump "$DB" "$BACKUPDIR/weekly/$DB/${DB}_week.$W.$DATE.sql"
-			compression "$BACKUPDIR/weekly/$DB/${DB}_week.$W.$DATE.sql"
-			BACKUPFILES="$BACKUPFILES $BACKUPDIR/weekly/$DB/${DB}_week.$W.$DATE.sql$SUFFIX"
+			dbdump "$DB" "$BACKUPDIR/weekly/$DB/${DB}_week.$W.$DATE.$EXT"
+			compression "$BACKUPDIR/weekly/$DB/${DB}_week.$W.$DATE.$EXT"
+			BACKUPFILES="$BACKUPFILES $BACKUPDIR/weekly/$DB/${DB}_week.$W.$DATE.$EXT$SUFFIX"
 		echo ----------------------------------------------------------------------
 	
 	# Daily Backup
 	else
 		echo Daily Backup of Database \( $DB \)
 		echo Rotating last weeks Backup...
-		rm -fv "$BACKUPDIR/daily/$DB"/*."$DOW".sql.*
+		rm -fv "$BACKUPDIR/daily/$DB"/*."$DOW".$EXT*
 		echo
-			dbdump "$DB" "$BACKUPDIR/daily/$DB/${DB}_$DATE.$DOW.sql"
-			compression "$BACKUPDIR/daily/$DB/${DB}_$DATE.$DOW.sql"
-			BACKUPFILES="$BACKUPFILES $BACKUPDIR/daily/$DB/${DB}_$DATE.$DOW.sql$SUFFIX"
+			dbdump "$DB" "$BACKUPDIR/daily/$DB/${DB}_$DATE.$DOW.$EXT"
+			compression "$BACKUPDIR/daily/$DB/${DB}_$DATE.$DOW.$EXT"
+			BACKUPFILES="$BACKUPFILES $BACKUPDIR/daily/$DB/${DB}_$DATE.$DOW.$EXT$SUFFIX"
 		echo ----------------------------------------------------------------------
 	fi
 	done
@@ -506,9 +509,9 @@ echo ======================================================================
 	# Monthly Full Backup of all Databases
 	if [ "$DOM" = "01" ]; then
 		echo Monthly full Backup of \( $MDBNAMES \)...
-			dbdump "$MDBNAMES" "$BACKUPDIR/monthly/$DATE.$M.all-databases.sql"
-			compression "$BACKUPDIR/monthly/$DATE.$M.all-databases.sql"
-			BACKUPFILES="$BACKUPFILES $BACKUPDIR/monthly/$DATE.$M.all-databases.sql$SUFFIX"
+			dbdump "$MDBNAMES" "$BACKUPDIR/monthly/$DATE.$M.all-databases.$EXT"
+			compression "$BACKUPDIR/monthly/$DATE.$M.all-databases.$EXT"
+			BACKUPFILES="$BACKUPFILES $BACKUPDIR/monthly/$DATE.$M.all-databases.$EXT$SUFFIX"
 		echo ----------------------------------------------------------------------
 	fi
 
@@ -526,9 +529,9 @@ echo ======================================================================
 			fi
 		rm -fv "$BACKUPDIR/weekly/week.$REMW".*
 		echo
-			dbdump "$DBNAMES" "$BACKUPDIR/weekly/week.$W.$DATE.sql"
-			compression "$BACKUPDIR/weekly/week.$W.$DATE.sql"
-			BACKUPFILES="$BACKUPFILES $BACKUPDIR/weekly/week.$W.$DATE.sql$SUFFIX"
+			dbdump "$DBNAMES" "$BACKUPDIR/weekly/week.$W.$DATE.$EXT"
+			compression "$BACKUPDIR/weekly/week.$W.$DATE.$EXT"
+			BACKUPFILES="$BACKUPFILES $BACKUPDIR/weekly/week.$W.$DATE.$EXT$SUFFIX"
 		echo ----------------------------------------------------------------------
 		
 	# Daily Backup
@@ -536,11 +539,11 @@ echo ======================================================================
 		echo Daily Backup of Databases \( $DBNAMES \)
 		echo
 		echo Rotating last weeks Backup...
-		rm -fv "$BACKUPDIR"/daily/*."$DOW".sql.*
+		rm -fv "$BACKUPDIR"/daily/*."$DOW".$EXT*
 		echo
-			dbdump "$DBNAMES" "$BACKUPDIR/daily/$DATE.$DOW.sql"
-			compression "$BACKUPDIR/daily/$DATE.$DOW.sql"
-			BACKUPFILES="$BACKUPFILES $BACKUPDIR/daily/$DATE.$DOW.sql$SUFFIX"
+			dbdump "$DBNAMES" "$BACKUPDIR/daily/$DATE.$DOW.$EXT"
+			compression "$BACKUPDIR/daily/$DATE.$DOW.$EXT"
+			BACKUPFILES="$BACKUPFILES $BACKUPDIR/daily/$DATE.$DOW.$EXT$SUFFIX"
 		echo ----------------------------------------------------------------------
 	fi
 echo Backup End Time `date`
