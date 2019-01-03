@@ -296,8 +296,8 @@ DOM=`date +%d`					# Date of the Month e.g. 27
 M=`date +%B`					# Month e.g January
 W=`date +%V`					# Week Number e.g 37
 VER=1.0							# Version Number
-LOGFILE=$BACKUPDIR/$DBHOST-`date +%N`.log			# Logfile Name
-LOGERR=$BACKUPDIR/ERRORS_$DBHOST-`date +%N`.log		# Logfile Name
+LOGFILE=$BACKUPDIR/${DBHOST//\//_}-`date +%N`.log			# Logfile Name
+LOGERR=$BACKUPDIR/ERRORS_${DBHOST//\//_}-`date +%N`.log		# Logfile Name
 BACKUPFILES=""
 
 # Add --compress pg_dump option to $OPT
