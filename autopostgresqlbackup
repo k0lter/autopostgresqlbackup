@@ -99,6 +99,32 @@ OPT=""
 # Backup files extension
 EXT="sql"
 
+# Encyrption settings
+# (inspired by http://blog.altudov.com/2010/09/27/using-openssl-for-asymmetric-encryption-of-backups/)
+#
+# Once the backup done, each SQL dump will be encrypted and the original file
+# will be deleted (if encryption was successful).
+# It is recommended to backup into a staging directory, and then use the
+# POSTBACKUP script to sync the encrypted files to the desired location.
+#
+# Encryption uses private/public keys. You can generate the key pairs like the following:
+# openssl req -x509 -nodes -days 100000 -newkey rsa:2048 -keyout backup.key -out backup.crt -subj '/'
+#
+# Decryption:
+# openssl smime -decrypt -in backup.sql.gz.enc -binary -inform DEM -inkey backup.key -out backup.sql.gz
+
+# Enable encryption
+ENCRYPTION=no
+
+# Encryption public key
+ENCRYPTION_PUBLIC_KEY=""
+
+# Encryption Cipher (see enc manpage)
+ENCRYPTION_CIPHER="aes256"
+
+# Suffix for encyrpted files
+ENCRYPTION_SUFFIX=".enc"
+
 # Command to run before backups (uncomment to use)
 #PREBACKUP="/etc/postgresql-backup-pre"
 
@@ -346,7 +372,26 @@ dbdump () {
 	return 0
 }
 
-# Compression function plus latest copy
+# Encryption function
+encryption() {
+	ENCRYPTED_FILE="$1$ENCRYPTION_SUFFIX"
+	# Encrypt as needed
+	if [ "$ENCRYPTION" = "yes" ]; then
+		echo
+		echo "Encrypting $1"
+		echo "	to $ENCRYPTED_FILE"
+		echo "	using cypher $ENCRYPTION_CIPHER and public key $ENCRYPTION_PUBLIC_KEY"
+		if openssl smime -encrypt -$ENCRYPTION_CIPHER -binary -outform DEM \
+			-out "$ENCRYPTED_FILE" \
+			-in "$1" "$ENCRYPTION_PUBLIC_KEY" ; then
+			echo "	and remove $1"
+			rm -f "$1"
+		fi
+	fi
+	return 0
+}
+
+# Compression (and encrypt) function plus latest copy
 SUFFIX=""
 compression () {
 if [ "$COMP" = "gzip" ]; then
@@ -362,12 +407,12 @@ elif [ "$COMP" = "bzip2" ]; then
 else
 	echo "No compression option set, check advanced settings"
 fi
+encryption $1$SUFFIX
 if [ "$LATEST" = "yes" ]; then
-	cp $1$SUFFIX "$BACKUPDIR/latest/"
+	cp $1$SUFFIX* "$BACKUPDIR/latest/"
 fi
 return 0
 }
-
 
 # Run command before we begin
 if [ "$PREBACKUP" ]
@@ -448,7 +493,7 @@ echo ======================================================================
 			echo Monthly Backup of $MDB...
 				dbdump "$MDB" "$BACKUPDIR/monthly/$MDB/${MDB}_$DATE.$M.$MDB.$EXT"
 				compression "$BACKUPDIR/monthly/$MDB/${MDB}_$DATE.$M.$MDB.$EXT"
-				BACKUPFILES="$BACKUPFILES $BACKUPDIR/monthly/$MDB/${MDB}_$DATE.$M.$MDB.$EXT$SUFFIX"
+				BACKUPFILES="$BACKUPFILES $BACKUPDIR/monthly/$MDB/${MDB}_$DATE.$M.$MDB.$EXT$SUFFIX*"
 			echo ----------------------------------------------------------------------
 		done
 	fi
@@ -484,7 +529,7 @@ echo ======================================================================
 		echo
 			dbdump "$DB" "$BACKUPDIR/weekly/$DB/${DB}_week.$W.$DATE.$EXT"
 			compression "$BACKUPDIR/weekly/$DB/${DB}_week.$W.$DATE.$EXT"
-			BACKUPFILES="$BACKUPFILES $BACKUPDIR/weekly/$DB/${DB}_week.$W.$DATE.$EXT$SUFFIX"
+			BACKUPFILES="$BACKUPFILES $BACKUPDIR/weekly/$DB/${DB}_week.$W.$DATE.$EXT$SUFFIX*"
 		echo ----------------------------------------------------------------------
 	
 	# Daily Backup
@@ -495,7 +540,7 @@ echo ======================================================================
 		echo
 			dbdump "$DB" "$BACKUPDIR/daily/$DB/${DB}_$DATE.$DOW.$EXT"
 			compression "$BACKUPDIR/daily/$DB/${DB}_$DATE.$DOW.$EXT"
-			BACKUPFILES="$BACKUPFILES $BACKUPDIR/daily/$DB/${DB}_$DATE.$DOW.$EXT$SUFFIX"
+			BACKUPFILES="$BACKUPFILES $BACKUPDIR/daily/$DB/${DB}_$DATE.$DOW.$EXT$SUFFIX*"
 		echo ----------------------------------------------------------------------
 	fi
 	done
@@ -511,7 +556,7 @@ echo ======================================================================
 		echo Monthly full Backup of \( $MDBNAMES \)...
 			dbdump "$MDBNAMES" "$BACKUPDIR/monthly/$DATE.$M.all-databases.$EXT"
 			compression "$BACKUPDIR/monthly/$DATE.$M.all-databases.$EXT"
-			BACKUPFILES="$BACKUPFILES $BACKUPDIR/monthly/$DATE.$M.all-databases.$EXT$SUFFIX"
+			BACKUPFILES="$BACKUPFILES $BACKUPDIR/monthly/$DATE.$M.all-databases.$EXT$SUFFIX*"
 		echo ----------------------------------------------------------------------
 	fi
 
@@ -531,7 +576,7 @@ echo ======================================================================
 		echo
 			dbdump "$DBNAMES" "$BACKUPDIR/weekly/week.$W.$DATE.$EXT"
 			compression "$BACKUPDIR/weekly/week.$W.$DATE.$EXT"
-			BACKUPFILES="$BACKUPFILES $BACKUPDIR/weekly/week.$W.$DATE.$EXT$SUFFIX"
+			BACKUPFILES="$BACKUPFILES $BACKUPDIR/weekly/week.$W.$DATE.$EXT$SUFFIX*"
 		echo ----------------------------------------------------------------------
 		
 	# Daily Backup
@@ -543,7 +588,7 @@ echo ======================================================================
 		echo
 			dbdump "$DBNAMES" "$BACKUPDIR/daily/$DATE.$DOW.$EXT"
 			compression "$BACKUPDIR/daily/$DATE.$DOW.$EXT"
-			BACKUPFILES="$BACKUPFILES $BACKUPDIR/daily/$DATE.$DOW.$EXT$SUFFIX"
+			BACKUPFILES="$BACKUPFILES $BACKUPDIR/daily/$DATE.$DOW.$EXT$SUFFIX*"
 		echo ----------------------------------------------------------------------
 	fi
 echo Backup End Time `date`
