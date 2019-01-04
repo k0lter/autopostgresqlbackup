@@ -1,6 +1,7 @@
 # AutoPostgreSQLBackup
 
 AutoPostgreSQLBackup is a shell script (usually executed from a cron job) designed to provide a fully automated tool to make periodic backups of PostgreSQL databases.
+
 AutoPostgreSQLBackup extract databases into flat files in a daily, weekly or monthly basis.
 
 It supports:
@@ -18,7 +19,7 @@ On Debian derived operating systems:
 
 Install it : `apt install autopostgresqlbackup`
 
-If the default options are not suitable for you, change then: `$EDITOR /etc/default/autopostgresqlbackup`
+If the default options are not suitable for you, change them: `$EDITOR /etc/default/autopostgresqlbackup`
 
 That's it!
 
