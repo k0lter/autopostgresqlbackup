@@ -79,7 +79,7 @@ SEPDIR=yes
 # Which day do you want weekly backups? (1 to 7 where 1 is Monday)
 DOWEEKLY=6
 
-# Choose Compression type. (gzip or bzip2)
+# Choose Compression type. (gzip, bzip2 or xz)
 COMP=gzip
 
 # Compress communications between backup server and PostgreSQL server?
@@ -404,6 +404,10 @@ elif [ "$COMP" = "bzip2" ]; then
     echo Compression information for "$1.bz2"
     bzip2 -f -v $1 2>&1
     SUFFIX=".bz2"
+elif [ "$COMP" = "xz" ]; then
+    echo Compression information for "$1.xz"
+    xz -9 -v $1 2>&1
+    SUFFIX=".xz"
 else
     echo "No compression option set, check advanced settings"
 fi
