@@ -99,6 +99,9 @@ OPT=""
 # Backup files extension
 EXT="sql"
 
+# Backup files permissions
+PERM=600
+
 # Encyrption settings
 # (inspired by http://blog.altudov.com/2010/09/27/using-openssl-for-asymmetric-encryption-of-backups/)
 #
@@ -353,7 +356,7 @@ exec 2> $LOGERR     # stderr replaced with file $LOGERR.
 dbdump () {
 	rm -f $2
 	touch $2
-	chmod 600 $2
+	chmod $PERM $2
 	for db in $1 ; do
 		if [ -n "$SU_USERNAME" ]; then
 			if [ "$db" = "$GLOBALS_OBJECTS" ]; then
@@ -385,6 +388,7 @@ encryption() {
 			-out "$ENCRYPTED_FILE" \
 			-in "$1" "$ENCRYPTION_PUBLIC_KEY" ; then
 			echo "	and remove $1"
+			chmod $PERM "$ENCRYPTED_FILE"
 			rm -f "$1"
 		fi
 	fi
