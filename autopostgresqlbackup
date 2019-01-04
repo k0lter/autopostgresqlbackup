@@ -44,6 +44,9 @@ DBHOST=localhost
 # List of DBNAMES for Daily/Weekly Backup e.g. "DB1 DB2 DB3"
 DBNAMES="all"
 
+# pseudo database name used to dump global objects (users, roles, tablespaces)
+GLOBALS_OBJECTS="postgres_globals"
+
 # Backup directory location e.g /backups
 BACKUPDIR="/backups"
 
@@ -324,9 +327,17 @@ dbdump () {
 	chmod 600 $2
 	for db in $1 ; do
 		if [ -n "$SU_USERNAME" ]; then
-			su $SU_USERNAME -c "pg_dump $PGHOST $OPT $db" >> $2
+			if [ "$db" = "$GLOBALS_OBJECTS" ]; then
+				su $SU_USERNAME -c "pg_dumpall $PGHOST --globals-only" >> $2
+			else
+				su $SU_USERNAME -c "pg_dump $PGHOST $OPT $db" >> $2
+			fi
 		else
-			pg_dump --username=$USERNAME $PGHOST $OPT $db >> $2
+			if [ "$db" = "$GLOBALS_OBJECTS" ]; then
+				pg_dumpall --username=$USERNAME $PGHOST --globals-only >> $2
+			else
+				pg_dump --username=$USERNAME $PGHOST $OPT $db >> $2
+			fi
 		fi
 	done
 	return 0
@@ -403,7 +414,11 @@ if [ "$DBNAMES" = "all" ]; then
 	DBNAMES="$(echo $DBNAMES| tr '\n' ' ')"
 	MDBNAMES=$DBNAMES
 fi
-	
+
+# Include global objects (users, tablespaces)
+DBNAMES="$GLOBALS_OBJECTS $DBNAMES"
+MDBNAMES="$GLOBALS_OBJECTS $MDBNAMES"
+
 echo ======================================================================
 echo AutoPostgreSQLBackup VER $VER
 echo http://autopgsqlbackup.frozenpc.net/
