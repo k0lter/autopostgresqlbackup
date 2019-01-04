@@ -3,12 +3,8 @@
 # PostgreSQL Backup Script Ver 1.0
 # http://autopgsqlbackup.frozenpc.net
 # Copyright (c) 2005 Aaron Axelsen <axelseaa@amadmax.com>
-#
-# This script is based of the AutoMySQLBackup Script Ver 2.2
-# It can be found at http://sourceforge.net/projects/automysqlbackup/
-#
-# The PostgreSQL changes are based on a patch agaisnt AutoMySQLBackup 1.9
-# created by Friedrich Lobenstock <fl@fl.priv.at>
+#               2005 Friedrich Lobenstock <fl@fl.priv.at>
+#               2013-2019 Emmanuel Bouthenot <kolter@debian.org>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -134,9 +130,9 @@ ENCRYPTION_SUFFIX=".enc"
 # Command run after backups (uncomment to use)
 #POSTBACKUP="/etc/postgresql-backup-post"
 
-# ===============================
-# === Debian specific options ===
-#================================
+#=====================================================================
+# Debian specific options ===
+#=====================================================================
 
 if [ -f /etc/default/autopostgresqlbackup ]; then
     . /etc/default/autopostgresqlbackup
@@ -457,7 +453,7 @@ if [ "$DBNAMES" = "all" ]; then
     else
         DBNAMES="`LANG=C psql -U $USERNAME $PGHOST -l -A -F: | sed -ne "/:/ { /Name:Owner/d; /template0/d; s/:.*$//; p }"`"
     fi
-    
+
     # If DBs are excluded
     for exclude in $DBEXCLUDE
     do
@@ -506,18 +502,18 @@ echo ======================================================================
     do
     # Prepare $DB for using
     DB="`echo $DB | sed 's/%/ /g'`"
-    
+
     # Create Seperate directory for each DB
     if [ ! -e "$BACKUPDIR/daily/$DB" ]      # Check Daily DB Directory exists.
         then
         mkdir -p "$BACKUPDIR/daily/$DB"
     fi
-    
+
     if [ ! -e "$BACKUPDIR/weekly/$DB" ]     # Check Weekly DB Directory exists.
         then
         mkdir -p "$BACKUPDIR/weekly/$DB"
     fi
-    
+
     # Weekly Backup
     if [ "$DNOW" = "$DOWEEKLY" ]; then
         echo Weekly Backup of Database \( $DB \)
@@ -535,7 +531,7 @@ echo ======================================================================
             compression "$BACKUPDIR/weekly/$DB/${DB}_week.$W.$DATE.$EXT"
             BACKUPFILES="$BACKUPFILES $BACKUPDIR/weekly/$DB/${DB}_week.$W.$DATE.$EXT$SUFFIX*"
         echo ----------------------------------------------------------------------
-    
+
     # Daily Backup
     else
         echo Daily Backup of Database \( $DB \)
@@ -582,7 +578,6 @@ echo ======================================================================
             compression "$BACKUPDIR/weekly/week.$W.$DATE.$EXT"
             BACKUPFILES="$BACKUPFILES $BACKUPDIR/weekly/week.$W.$DATE.$EXT$SUFFIX*"
         echo ----------------------------------------------------------------------
-        
     # Daily Backup
     else
         echo Daily Backup of Databases \( $DBNAMES \)
