@@ -11,7 +11,7 @@ It supports:
  * Pre and Post scripts
  * Local configuration
 
-# Usage
+## Usage
 
 On Debian derived operating systems:
 Install it : `apt install autopostgresqlbackup`
@@ -26,7 +26,7 @@ That's it!
  * Since 2011: Various patches (fixes and new features) were added in the Debian package
  * 2019: Creation of a fork/standelone project on Github (https://github.com/k0lter/autopostgresqlbackup)
 
-# Authors
+## Authors
 
  * Aaron Axelsen (Original author)
  * Friedrich Lobenstock (Contributions)
