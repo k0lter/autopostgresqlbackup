@@ -638,6 +638,10 @@ then
         then
             BACKUPFILES=$(echo $BACKUPFILES | sed -e 's# # -a #g')
             heirloom-mailx -s "PostgreSQL Backup Log and SQL Files for $HOST - $DATE" $BACKUPFILES $MAILADDR < $LOGFILE
+        elif which neomutt >/dev/null 2>&1
+        then
+            BACKUPFILES=$(echo $BACKUPFILES | sed -e 's# # -a #g')
+            neomutt -s "PostgreSQL Backup Log and SQL Files for $HOST - $DATE" -a $BACKUPFILES -- $MAILADDR < $LOGFILE
         elif which mutt >/dev/null 2>&1
         then
             BACKUPFILES=$(echo $BACKUPFILES | sed -e 's# # -a #g')
