@@ -641,7 +641,7 @@ then
         elif which mutt >/dev/null 2>&1
         then
             BACKUPFILES=$(echo $BACKUPFILES | sed -e 's# # -a #g')
-            mutt -s "PostgreSQL Backup Log and SQL Files for $HOST - $DATE" $BACKUPFILES $MAILADDR < $LOGFILE
+            mutt -s "PostgreSQL Backup Log and SQL Files for $HOST - $DATE" -a $BACKUPFILES -- $MAILADDR < $LOGFILE
         else
             cat "$LOGFILE" | mail -s "WARNING! - Enable to send PostgreSQL Backup dumps, no suitable mail client found on $HOST - $DATE" $MAILADDR
         fi
