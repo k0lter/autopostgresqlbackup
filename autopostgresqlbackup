@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# PostgreSQL Backup Script Ver 1.0
-# http://autopgsqlbackup.frozenpc.net
+# PostgreSQL Backup Script
+# https://github.com/k0lter/autopostgresqlbackup
 # Copyright (c) 2005 Aaron Axelsen <axelseaa@amadmax.com>
 #               2005 Friedrich Lobenstock <fl@fl.priv.at>
 #               2013-2019 Emmanuel Bouthenot <kolter@openics.org>
@@ -272,13 +272,6 @@ fi
 # Lets hope you never have to use this.. :)
 #
 #=====================================================================
-# Change Log
-#=====================================================================
-#
-# VER 1.0 - (2005-03-25)
-#   Initial Release - based on AutoMySQLBackup 2.2
-#
-#=====================================================================
 #=====================================================================
 #=====================================================================
 #
@@ -294,7 +287,7 @@ DNOW=`date +%u`                 # Day number of the week 1 to 7 where 1 represen
 DOM=`date +%d`                  # Date of the Month e.g. 27
 M=`date +%B`                    # Month e.g January
 W=`date +%V`                    # Week Number e.g 37
-VER=1.0                         # Version Number
+VER=1.1                         # Version Number
 LOGFILE=${BACKUPDIR}/${DBHOST//\//_}-`date +%N`.log           # Logfile Name
 LOGERR=${BACKUPDIR}/ERRORS_${DBHOST//\//_}-`date +%N`.log     # Logfile Name
 BACKUPFILES=""
@@ -470,7 +463,6 @@ MDBNAMES="${GLOBALS}_OBJECTS ${MDBNAMES}"
 
 echo ======================================================================
 echo AutoPostgreSQLBackup VER ${VER}
-echo http://autopgsqlbackup.frozenpc.net/
 echo
 echo Backup of Database Server - ${HOST}
 echo ======================================================================
