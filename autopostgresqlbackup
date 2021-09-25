@@ -290,15 +290,15 @@ fi
 # {{{ Defaults
 
 PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/postgres/bin:/usr/local/pgsql/bin
-DATE=`date +%Y-%m-%d_%Hh%Mm`    # Datestamp e.g 2002-09-21
-DOW=`date +%A`                  # Day of the week e.g. Monday
-DNOW=`date +%u`                 # Day number of the week 1 to 7 where 1 represents Monday
-DOM=`date +%d`                  # Date of the Month e.g. 27
-M=`date +%B`                    # Month e.g January
-W=`date +%V`                    # Week Number e.g 37
-VER=1.1                         # Version Number
-LOGFILE=${BACKUPDIR}/${DBHOST//\//_}-`date +%N`.log           # Logfile Name
-LOGERR=${BACKUPDIR}/ERRORS_${DBHOST//\//_}-`date +%N`.log     # Logfile Name
+DATE="$(date +%Y-%m-%d_%Hh%Mm)"    # Datestamp e.g 2002-09-21
+DOW="$(date +%A)"                  # Day of the week e.g. Monday
+DNOW="$(date +%u)"                 # Day number of the week 1 to 7 where 1 represents Monday
+DOM="$(date +%d)"                  # Date of the Month e.g. 27
+M="$(date +%B)"                    # Month e.g January
+W="$(date +%V)"                    # Week Number e.g 37
+VER="1.1"                          # Version Number
+LOGFILE="${BACKUPDIR}/${DBHOST//\//_}-$(date +%N).log"           # Logfile Name
+LOGERR="${BACKUPDIR}/ERRORS_${DBHOST//\//_}-$(date +%N).log"     # Logfile Name
 BACKUPFILES=""
 
 # Add --compress pg_dump option to ${OPT}
@@ -334,11 +334,11 @@ fi
 touch ${LOGFILE}
 exec 6>&1           # Link file descriptor #6 with stdout.
                     # Saves stdout.
-exec > ${LOGFILE}     # stdout replaced with file ${LOGFILE}.
+exec > ${LOGFILE}   # stdout replaced with file ${LOGFILE}.
 touch ${LOGERR}
 exec 7>&2           # Link file descriptor #7 with stderr.
                     # Saves stderr.
-exec 2> ${LOGERR}     # stderr replaced with file ${LOGERR}.
+exec 2> ${LOGERR}   # stderr replaced with file ${LOGERR}.
 
 if [ "${SEPDIR}" = "yes" ]; then # Check if CREATE DATABSE should be included in Dump
     if [ "${CREATE}_DATABASE" = "no" ]; then
@@ -352,27 +352,27 @@ fi
 
 # Hostname for LOG information
 if [ "${DBHOST}" = "localhost" ]; then
-    HOST=`hostname`
+    HOST="$(hostname)"
     PGHOST=""
 else
-    HOST=${DBHOST}
+    HOST="${DBHOST}"
     PGHOST="-h ${DBHOST}"
 fi
 
 # If backing up all DBs on the server
 if [ "${DBNAMES}" = "all" ]; then
-    if [ -n "${SU}_USERNAME" ]; then
-        DBNAMES="$(su - ${SU}_USERNAME -l -c "LANG=C psql -U ${USERNAME} ${PGHOST} -l -A -F: | sed -ne '/:/ { /Name:Owner/d; /template0/d; s/:.*$//; p }'")"
+    if [ -n "${SU_USERNAME}" ]; then
+        DBNAMES="$(su - ${SU_USERNAME} -l -c "LANG=C psql -U ${USERNAME} ${PGHOST} -l -A -F: | sed -ne '/:/ { /Name:Owner/d; /template0/d; s/:.*$//; p }'")"
     else
-        DBNAMES="`LANG=C psql -U ${USERNAME} ${PGHOST} -l -A -F: | sed -ne "/:/ { /Name:Owner/d; /template0/d; s/:.*$//; p }"`"
+        DBNAMES="$(LANG=C psql -U ${USERNAME} ${PGHOST} -l -A -F: | sed -ne "/:/ { /Name:Owner/d; /template0/d; s/:.*$//; p }")"
     fi
 
     # If DBs are excluded
     for exclude in ${DBEXCLUDE} ; do
-        DBNAMES=`echo ${DBNAMES} | sed "s/\b${exclude}\b//g"`
+        DBNAMES="$(echo ${DBNAMES} | sed "s/\b${exclude}\b//g")"
     done
     DBNAMES="$(echo ${DBNAMES}| tr '\n' ' ')"
-    MDBNAMES=${DBNAMES}
+    MDBNAMES="${DBNAMES}"
 fi
 
 # Include global objects (users, tablespaces)
@@ -382,17 +382,16 @@ MDBNAMES="${GLOBALS}_OBJECTS ${MDBNAMES}"
 # }}}
 
 # {{{ dbdump()
-
 dbdump () {
     rm -f "${2}"
     touch "${2}"
     chmod ${PERM} "${2}"
     for db in ${1} ; do
-        if [ -n "${SU}_USERNAME" ]; then
+        if [ -n "${SU_USERNAME}" ]; then
             if [ "${db}" = "${GLOBALS}_OBJECTS" ]; then
-                su - ${SU}_USERNAME -l -c "pg_dumpall ${PGHOST} --globals-only" >> "${2}"
+                su - ${SU_USERNAME} -l -c "pg_dumpall ${PGHOST} --globals-only" >> "${2}"
             else
-                su - ${SU}_USERNAME -l -c "pg_dump ${PGHOST} ${OPT} ${db}" >> "${2}"
+                su - ${SU_USERNAME} -l -c "pg_dump ${PGHOST} ${OPT} ${db}" >> "${2}"
             fi
         else
             if [ "${db}" = "${GLOBALS}_OBJECTS" ]; then
@@ -469,7 +468,7 @@ compression () {
 # {{{ PreBackup
 
 # Run command before we begin
-if [ "${PREBACKUP}" ]
+if [ -n "${PREBACKUP}" ]
     then
     echo ======================================================================
     echo "Prebackup command output."
@@ -492,13 +491,13 @@ echo ======================================================================
 
 # Test is seperate DB backups are required
 if [ "${SEPDIR}" = "yes" ]; then
-    echo Backup Start Time `date`
+    echo Backup Start Time $(date)
     echo ======================================================================
     # Monthly Full Backup of all Databases
     if [ "${DOM}" = "01" ]; then
         for MDB in ${MDBNAMES} ; do
              # Prepare ${DB} for using
-            MDB="`echo ${MDB} | sed 's/%/ /g'`"
+            MDB="$(echo ${MDB} | sed 's/%/ /g')"
             if [ ! -e "${BACKUPDIR}/monthly/${MDB}" ]; then # Check Monthly DB Directory exists.
                 mkdir -p "${BACKUPDIR}/monthly/${MDB}"
             fi
@@ -512,7 +511,7 @@ if [ "${SEPDIR}" = "yes" ]; then
 
     for DB in ${DBNAMES} ; do
         # Prepare ${DB} for using
-        DB="`echo ${DB} | sed 's/%/ /g'`"
+        DB="$(echo ${DB} | sed 's/%/ /g')"
 
         # Create Seperate directory for each DB
         if [ ! -e "${BACKUPDIR}/daily/${DB}" ]; then # Check Daily DB Directory exists.
@@ -528,11 +527,11 @@ if [ "${SEPDIR}" = "yes" ]; then
             echo Weekly Backup of Database \( ${DB} \)
             echo Rotating 5 weeks Backups...
             if [ "${W}" -le 05 ];then
-                REMW=`expr 48 + ${W}`
+                REMW="$(expr 48 + ${W})"
             elif [ "${W}" -lt 15 ];then
-                REMW=0`expr ${W} - 5`
+                REMW="0$(expr ${W} - 5)"
             else
-                REMW=`expr ${W} - 5`
+                REMW="$(expr ${W} - 5)"
             fi
             rm -fv "${BACKUPDIR}/weekly/${DB}/${DB}_week.${REMW}".*
             echo
@@ -552,12 +551,12 @@ if [ "${SEPDIR}" = "yes" ]; then
             echo ----------------------------------------------------------------------
         fi
     done
-    echo Backup End `date`
+    echo Backup End $(date)
     echo ======================================================================
 
 else # One backup file for all DBs
 
-    echo Backup Start `date`
+    echo Backup Start $(date)
     echo ======================================================================
     # Monthly Full Backup of all Databases
     if [ "${DOM}" = "01" ]; then
@@ -574,11 +573,11 @@ else # One backup file for all DBs
         echo
         echo Rotating 5 weeks Backups...
         if [ "${W}" -le 05 ];then
-            REMW=`expr 48 + ${W}`
+            REMW="$(expr 48 + ${W})"
         elif [ "${W}" -lt 15 ];then
-            REMW=0`expr ${W} - 5`
+            REMW="0$(expr ${W} - 5)"
         else
-            REMW=`expr ${W} - 5`
+            REMW="$(expr ${W} - 5)"
         fi
         rm -fv "${BACKUPDIR}/weekly/week.${REMW}".*
         echo
@@ -598,13 +597,13 @@ else # One backup file for all DBs
         BACKUPFILES="${BACKUPFILES} ${BACKUPDIR}/daily/${DATE}.${DOW}.${EXT}${SUFFIX}*"
         echo ----------------------------------------------------------------------
     fi
-    echo Backup End Time `date`
+    echo Backup End Time $(date)
     echo ======================================================================
 fi
 
 echo Total disk space used for backup storage..
 echo Size - Location
-echo `du -hs "${BACKUPDIR}"`
+echo $(du -hs "${BACKUPDIR}")
 echo
 
 # }}}
@@ -612,7 +611,7 @@ echo
 # {{{ PostBackup
 
 # Run command when we're done
-if [ "${POSTBACKUP}" ]
+if [ -n "${POSTBACKUP}" ]
     then
     echo ======================================================================
     echo "Postbackup command output."
@@ -641,7 +640,7 @@ if [ "${MAILCONTENT}" = "files" ]; then
         ERRORNOTE="WARNING: Error Reported - "
     fi
     #Get backup size
-    ATTSIZE=`du -c ${BACKUPFILES} | grep "[[:digit:][:space:]]total$" |sed s/\s*total//`
+    ATTSIZE=$(du -c ${BACKUPFILES} | grep "[[:digit:][:space:]]total$" |sed s/\s*total//)
     if [ ${MAXATTSIZE} -ge ${ATTSIZE} ]; then
         if which biabam >/dev/null 2>&1; then
             BACKUPFILES=$(echo ${BACKUPFILES} | sed -r -e 's#\s+#,#g')
