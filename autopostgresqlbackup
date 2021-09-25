@@ -336,21 +336,21 @@ exec 2> ${LOGERR}     # stderr replaced with file ${LOGERR}.
 
 # Database dump function
 dbdump () {
-    rm -f $2
-    touch $2
-    chmod ${PERM} $2
-    for db in $1 ; do
+    rm -f "${2}"
+    touch "${2}"
+    chmod ${PERM} "${2}"
+    for db in ${1} ; do
         if [ -n "${SU}_USERNAME" ]; then
             if [ "${db}" = "${GLOBALS}_OBJECTS" ]; then
-                su - ${SU}_USERNAME -l -c "pg_dumpall ${PGHOST} --globals-only" >> $2
+                su - ${SU}_USERNAME -l -c "pg_dumpall ${PGHOST} --globals-only" >> "${2}"
             else
-                su - ${SU}_USERNAME -l -c "pg_dump ${PGHOST} ${OPT} ${db}" >> $2
+                su - ${SU}_USERNAME -l -c "pg_dump ${PGHOST} ${OPT} ${db}" >> "${2}"
             fi
         else
             if [ "${db}" = "${GLOBALS}_OBJECTS" ]; then
-                pg_dumpall --username=${USERNAME} ${PGHOST} --globals-only >> $2
+                pg_dumpall --username=${USERNAME} ${PGHOST} --globals-only >> "${2}"
             else
-                pg_dump --username=${USERNAME} ${PGHOST} ${OPT} ${db} >> $2
+                pg_dump --username=${USERNAME} ${PGHOST} ${OPT} ${db} >> "${2}"
             fi
         fi
     done
@@ -359,19 +359,19 @@ dbdump () {
 
 # Encryption function
 encryption() {
-    ENCRYPTED_FILE="$1${ENCRYPTION}_SUFFIX"
+    ENCRYPTED_FILE="${1}${ENCRYPTION}_SUFFIX"
     # Encrypt as needed
     if [ "${ENCRYPTION}" = "yes" ]; then
         echo
-        echo "Encrypting $1"
+        echo "Encrypting ${1}"
         echo "  to ${ENCRYPTED}_FILE"
         echo "  using cypher ${ENCRYPTION}_CIPHER and public key ${ENCRYPTION}_PUBLIC_KEY"
         if openssl smime -encrypt -${ENCRYPTION}_CIPHER -binary -outform DEM \
             -out "${ENCRYPTED}_FILE" \
-            -in "$1" "${ENCRYPTION}_PUBLIC_KEY" ; then
-            echo "  and remove $1"
+            -in "${1}" "${ENCRYPTION}_PUBLIC_KEY" ; then
+            echo "  and remove ${1}"
             chmod ${PERM} "${ENCRYPTED}_FILE"
-            rm -f "$1"
+            rm -f "${1}"
         fi
     fi
     return 0
@@ -381,29 +381,29 @@ encryption() {
 SUFFIX=""
 compression () {
     if [ "${COMP}" = "gzip" ]; then
-        gzip -f "$1"
+        gzip -f "${1}"
         echo
-        echo Backup Information for "$1"
-        gzip -l "$1.gz"
+        echo Backup Information for "${1}"
+        gzip -l "${1}.gz"
         SUFFIX=".gz"
         echo
     elif [ "${COMP}" = "bzip2" ]; then
-        echo Compression information for "$1.bz2"
-        bzip2 -f -v $1 2>&1
+        echo Compression information for "${1}.bz2"
+        bzip2 -f -v "${1}" 2>&1
         SUFFIX=".bz2"
     elif [ "${COMP}" = "xz" ]; then
-        xz -9 $1 2>&1
-        echo Backup information for "$1.xz"
-        xz -l "$1.xz"
+        xz -9 "${1}" 2>&1
+        echo Backup information for "${1}.xz"
+        xz -l "${1}.xz"
         SUFFIX=".xz"
     else
         echo "No compression option set, check advanced settings"
     fi
 
-    encryption $1${SUFFIX}
+    encryption "${1}${SUFFIX}"
 
     if [ "${LATEST}" = "yes" ]; then
-        cp $1${SUFFIX}* "${BACKUPDIR}/latest/"
+        cp ${1}${SUFFIX}* "${BACKUPDIR}/latest/"
     fi
 
     return 0
