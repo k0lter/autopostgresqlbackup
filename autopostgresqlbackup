@@ -394,28 +394,33 @@ encryption() {
 # Compression (and encrypt) function plus latest copy
 SUFFIX=""
 compression () {
-if [ "$COMP" = "gzip" ]; then
-    gzip -f "$1"
-    echo
-    echo Backup Information for "$1"
-    gzip -l "$1.gz"
-    SUFFIX=".gz"
-elif [ "$COMP" = "bzip2" ]; then
-    echo Compression information for "$1.bz2"
-    bzip2 -f -v $1 2>&1
-    SUFFIX=".bz2"
-elif [ "$COMP" = "xz" ]; then
-    echo Compression information for "$1.xz"
-    xz -9 -v $1 2>&1
-    SUFFIX=".xz"
-else
-    echo "No compression option set, check advanced settings"
-fi
-encryption $1$SUFFIX
-if [ "$LATEST" = "yes" ]; then
-    cp $1$SUFFIX* "$BACKUPDIR/latest/"
-fi
-return 0
+    if [ "$COMP" = "gzip" ]; then
+        gzip -f "$1"
+        echo
+        echo Backup Information for "$1"
+        gzip -l "$1.gz"
+        SUFFIX=".gz"
+        echo
+    elif [ "$COMP" = "bzip2" ]; then
+        echo Compression information for "$1.bz2"
+        bzip2 -f -v $1 2>&1
+        SUFFIX=".bz2"
+    elif [ "$COMP" = "xz" ]; then
+        xz -9 $1 2>&1
+        echo Backup information for "$1.xz"
+        xz -l "$1.xz"
+        SUFFIX=".xz"
+    else
+        echo "No compression option set, check advanced settings"
+    fi
+
+    encryption $1$SUFFIX
+
+    if [ "$LATEST" = "yes" ]; then
+        cp $1$SUFFIX* "$BACKUPDIR/latest/"
+    fi
+
+    return 0
 }
 
 # Run command before we begin
