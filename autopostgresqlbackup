@@ -285,7 +285,7 @@ elif [ "$COMP" = "bzip2" ]; then
   SUFFIX=".bz2"
 elif [ "$COMP" = "xz" ]; then
   echo Compression information for "$1.xz"
-  xz -9 -v $1 2>&1
+  xz -4 -v $1 2>&1
   SUFFIX=".xz"
 else
   echo "No compression option set, check advanced settings"
