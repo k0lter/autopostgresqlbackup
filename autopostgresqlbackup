@@ -25,119 +25,6 @@
 # (Detailed instructions below variables)
 #=====================================================================
 
-# Username to access the PostgreSQL server e.g. dbuser
-USERNAME=postgres
-
-# Password
-# create a file $HOME/.pgpass containing a line like this
-#   hostname:*:*:dbuser:dbpass
-# replace hostname with the value of DBHOST and postgres with
-# the value of USERNAME
-
-# Host name (or IP address) of PostgreSQL server e.g localhost
-DBHOST=localhost
-
-# List of DBNAMES for Daily/Weekly Backup e.g. "DB1 DB2 DB3"
-DBNAMES="all"
-
-# pseudo database name used to dump global objects (users, roles, tablespaces)
-GLOBALS_OBJECTS="postgres_globals"
-
-# Backup directory location e.g /backups
-BACKUPDIR="/backups"
-
-# Mail setup
-# What would you like to be mailed to you?
-# - log   : send only log file
-# - files : send log file and sql files as attachments (see docs)
-# - stdout : will simply output the log to the screen if run manually.
-# - quiet : Only send logs if an error occurs to the MAILADDR.
-MAILCONTENT="stdout"
-
-# Set the maximum allowed email size in k. (4000 = approx 5MB email [see docs])
-MAXATTSIZE="4000"
-
-# Email Address to send mail to? (user@domain.com)
-MAILADDR="user@domain.com"
-
-# ============================================================
-# === ADVANCED OPTIONS ( Read the doc's below for details )===
-#=============================================================
-
-# List of DBBNAMES for Monthly Backups.
-MDBNAMES="template1 $DBNAMES"
-
-# List of DBNAMES to EXLUCDE if DBNAMES are set to all (must be in " quotes)
-DBEXCLUDE=""
-
-# Include CREATE DATABASE in backup?
-CREATE_DATABASE=yes
-
-# Separate backup directory and file for each DB? (yes or no)
-SEPDIR=yes
-
-# Which day do you want weekly backups? (1 to 7 where 1 is Monday)
-DOWEEKLY=6
-
-# Choose Compression type. (gzip, bzip2 or xz)
-COMP=gzip
-
-# Compress communications between backup server and PostgreSQL server?
-# set compression level from 0 to 9 (0 means no compression)
-COMMCOMP=0
-
-# Additionally keep a copy of the most recent backup in a seperate directory.
-LATEST=no
-
-# OPT string for use with pg_dump ( see man pg_dump )
-OPT=""
-
-# Backup files extension
-EXT="sql"
-
-# Backup files permissions
-PERM=600
-
-# Encyrption settings
-# (inspired by http://blog.altudov.com/2010/09/27/using-openssl-for-asymmetric-encryption-of-backups/)
-#
-# Once the backup done, each SQL dump will be encrypted and the original file
-# will be deleted (if encryption was successful).
-# It is recommended to backup into a staging directory, and then use the
-# POSTBACKUP script to sync the encrypted files to the desired location.
-#
-# Encryption uses private/public keys. You can generate the key pairs like the following:
-# openssl req -x509 -nodes -days 100000 -newkey rsa:2048 -keyout backup.key -out backup.crt -subj '/'
-#
-# Decryption:
-# openssl smime -decrypt -in backup.sql.gz.enc -binary -inform DEM -inkey backup.key -out backup.sql.gz
-
-# Enable encryption
-ENCRYPTION=no
-
-# Encryption public key
-ENCRYPTION_PUBLIC_KEY=""
-
-# Encryption Cipher (see enc manpage)
-ENCRYPTION_CIPHER="aes256"
-
-# Suffix for encyrpted files
-ENCRYPTION_SUFFIX=".enc"
-
-# Command to run before backups (uncomment to use)
-#PREBACKUP="/etc/postgresql-backup-pre"
-
-# Command run after backups (uncomment to use)
-#POSTBACKUP="/etc/postgresql-backup-post"
-
-#=====================================================================
-# Debian specific options ===
-#=====================================================================
-
-if [ -f /etc/default/autopostgresqlbackup ]; then
-    . /etc/default/autopostgresqlbackup
-fi
-
 #=====================================================================
 # Options documentation
 #=====================================================================
@@ -345,7 +232,6 @@ exec 7>&2           # Link file descriptor #7 with stderr.
                     # Saves stderr.
 exec 2> $LOGERR     # stderr replaced with file $LOGERR.
 
-
 # Functions
 
 # Database dump function
@@ -430,7 +316,6 @@ if [ "$PREBACKUP" ]
     echo
 fi
 
-
 if [ "$SEPDIR" = "yes" ]; then # Check if CREATE DATABSE should be included in Dump
     if [ "$CREATE_DATABASE" = "no" ]; then
         OPT="$OPT"
@@ -486,10 +371,8 @@ echo ======================================================================
     if [ "$DOM" = "01" ]; then
         for MDB in $MDBNAMES
         do
-
              # Prepare $DB for using
                 MDB="`echo $MDB | sed 's/%/ /g'`"
-
             if [ ! -e "$BACKUPDIR/monthly/$MDB" ]       # Check Monthly DB Directory exists.
             then
                 mkdir -p "$BACKUPDIR/monthly/$MDB"
@@ -535,7 +418,6 @@ echo ======================================================================
             compression "$BACKUPDIR/weekly/$DB/${DB}_week.$W.$DATE.$EXT"
             BACKUPFILES="$BACKUPFILES $BACKUPDIR/weekly/$DB/${DB}_week.$W.$DATE.$EXT$SUFFIX*"
         echo ----------------------------------------------------------------------
-
     # Daily Backup
     else
         echo Daily Backup of Database \( $DB \)
@@ -551,7 +433,6 @@ echo ======================================================================
 echo Backup End `date`
 echo ======================================================================
 
-
 else # One backup file for all DBs
 echo Backup Start `date`
 echo ======================================================================
@@ -563,7 +444,6 @@ echo ======================================================================
             BACKUPFILES="$BACKUPFILES $BACKUPDIR/monthly/$DATE.$M.all-databases.$EXT$SUFFIX*"
         echo ----------------------------------------------------------------------
     fi
-
     # Weekly Backup
     if [ "$DNOW" = "$DOWEEKLY" ]; then
         echo Weekly Backup of Databases \( $DBNAMES \)
@@ -601,7 +481,6 @@ echo Total disk space used for backup storage..
 echo Size - Location
 echo `du -hs "$BACKUPDIR"`
 echo
-
 
 # Run command when we're done
 if [ "$POSTBACKUP" ]
