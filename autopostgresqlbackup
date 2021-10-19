@@ -354,12 +354,12 @@ echo
 echo Backup of Database Server - $HOST
 echo ======================================================================
 
-# Test is seperate DB backups are required
+# Test is separate DB backups are required
 if [ "$SEPDIR" = "yes" ]; then
 echo Backup Start Time `date`
 echo ======================================================================
   # Monthly Full Backup of all Databases
-  if [ "$DOM" = "01" ]; then
+  if [[ "$DOMONTHLY" = "yes" && "$DOM" = "01" ]]; then
     for MDB in $MDBNAMES; do
       # Prepare $DB for using
       MDB="`echo $MDB | sed 's/%/ /g'`"
@@ -423,7 +423,7 @@ else # One backup file for all DBs
 echo Backup Start `date`
 echo ======================================================================
   # Monthly Full Backup of all Databases
-  if [ "$DOM" = "01" ]; then
+  if [[ "$DOMONTHLY" = "yes" && "$DOM" = "01" ]]; then
     echo Monthly full Backup of \( $MDBNAMES \)...
     dbdump "$MDBNAMES" "$BACKUPDIR/monthly/$DATE.$M.all-databases.$EXT"
     compression "$BACKUPDIR/monthly/$DATE.$M.all-databases.$EXT"
@@ -482,43 +482,44 @@ fi
 exec 1>&6 6>&-      # Restore stdout and close file descriptor #6.
 exec 2>&7 7>&-      # Restore stdout and close file descriptor #7.
 
-if [ "$MAILCONTENT" = "files" ]
-then
-  if [ -s "$LOGERR" ]; then
-    # Include error log if is larger than zero.
-    BACKUPFILES="$BACKUPFILES $LOGERR"
-    ERRORNOTE="WARNING: Error Reported - "
-  fi
-  #Get backup size
-  ATTSIZE=`du -c $BACKUPFILES | grep "[[:digit:][:space:]]total$" |sed s/\s*total//`
-  if [ $MAXATTSIZE -ge $ATTSIZE ]; then
-    if which biabam >/dev/null 2>&1; then
-      BACKUPFILES=$(echo $BACKUPFILES | sed -r -e 's#\s+#,#g')
-      biabam -s "PostgreSQL Backup Log and SQL Files for $HOST - $DATE" $BACKUPFILES $MAILADDR < $LOGFILE
-    elif which heirloom-mailx >/dev/null 2>&1; then
-      BACKUPFILES=$(echo $BACKUPFILES | sed -e 's# # -a #g')
-      heirloom-mailx -s "PostgreSQL Backup Log and SQL Files for $HOST - $DATE" $BACKUPFILES $MAILADDR < $LOGFILE
-    elif which neomutt >/dev/null 2>&1; then
-      BACKUPFILES=$(echo $BACKUPFILES | sed -e 's# # -a #g')
-      neomutt -s "PostgreSQL Backup Log and SQL Files for $HOST - $DATE" -a $BACKUPFILES -- $MAILADDR < $LOGFILE
-    elif which mutt >/dev/null 2>&1; then
-      BACKUPFILES=$(echo $BACKUPFILES | sed -e 's# # -a #g')
-      mutt -s "PostgreSQL Backup Log and SQL Files for $HOST - $DATE" -a $BACKUPFILES -- $MAILADDR < $LOGFILE
-    else
-      cat "$LOGFILE" | mail -s "WARNING! - Enable to send PostgreSQL Backup dumps, no suitable mail client found on $HOST - $DATE" $MAILADDR
+if [ "$EMAIL" = "yes" ]; then
+  if [ "$MAILCONTENT" = "files" ]; then
+    if [ -s "$LOGERR" ]; then
+      # Include error log if is larger than zero.
+      BACKUPFILES="$BACKUPFILES $LOGERR"
+      ERRORNOTE="WARNING: Error Reported - "
     fi
-  else
-    cat "$LOGFILE" | mail -s "WARNING! - PostgreSQL Backup exceeds set maximum attachment size on $HOST - $DATE" $MAILADDR
-  fi
-elif [ "$MAILCONTENT" = "log" ]; then
-  cat "$LOGFILE" | mail -s "PostgreSQL Backup Log for $HOST - $DATE" $MAILADDR
-  if [ -s "$LOGERR" ]; then
-    cat "$LOGERR" | mail -s "ERRORS REPORTED: PostgreSQL Backup error Log for $HOST - $DATE" $MAILADDR
-  fi
-elif [ "$MAILCONTENT" = "quiet" ]; then
-  if [ -s "$LOGERR" ]; then
-    cat "$LOGERR" | mail -s "ERRORS REPORTED: PostgreSQL Backup error Log for $HOST - $DATE" $MAILADDR
+    #Get backup size
+    ATTSIZE=`du -c $BACKUPFILES | grep "[[:digit:][:space:]]total$" |sed s/\s*total//`
+    if [ $MAXATTSIZE -ge $ATTSIZE ]; then
+      if which biabam >/dev/null 2>&1; then
+        BACKUPFILES=$(echo $BACKUPFILES | sed -r -e 's#\s+#,#g')
+        biabam -s "PostgreSQL Backup Log and SQL Files for $HOST - $DATE" $BACKUPFILES $MAILADDR < $LOGFILE
+      elif which heirloom-mailx >/dev/null 2>&1; then
+        BACKUPFILES=$(echo $BACKUPFILES | sed -e 's# # -a #g')
+        heirloom-mailx -s "PostgreSQL Backup Log and SQL Files for $HOST - $DATE" $BACKUPFILES $MAILADDR < $LOGFILE
+      elif which neomutt >/dev/null 2>&1; then
+        BACKUPFILES=$(echo $BACKUPFILES | sed -e 's# # -a #g')
+        neomutt -s "PostgreSQL Backup Log and SQL Files for $HOST - $DATE" -a $BACKUPFILES -- $MAILADDR < $LOGFILE
+      elif which mutt >/dev/null 2>&1; then
+        BACKUPFILES=$(echo $BACKUPFILES | sed -e 's# # -a #g')
+        mutt -s "PostgreSQL Backup Log and SQL Files for $HOST - $DATE" -a $BACKUPFILES -- $MAILADDR < $LOGFILE
+      else
+        cat "$LOGFILE" | mail -s "WARNING! - Enable to send PostgreSQL Backup dumps, no suitable mail client found on $HOST - $DATE" $MAILADDR
+      fi
+    else
+      cat "$LOGFILE" | mail -s "WARNING! - PostgreSQL Backup exceeds set maximum attachment size on $HOST - $DATE" $MAILADDR
+    fi
+  elif [ "$MAILCONTENT" = "log" ]; then
     cat "$LOGFILE" | mail -s "PostgreSQL Backup Log for $HOST - $DATE" $MAILADDR
+    if [ -s "$LOGERR" ]; then
+      cat "$LOGERR" | mail -s "ERRORS REPORTED: PostgreSQL Backup error Log for $HOST - $DATE" $MAILADDR
+    fi
+  elif [ "$MAILCONTENT" = "quiet" ]; then
+    if [ -s "$LOGERR" ]; then
+      cat "$LOGERR" | mail -s "ERRORS REPORTED: PostgreSQL Backup error Log for $HOST - $DATE" $MAILADDR
+      cat "$LOGFILE" | mail -s "PostgreSQL Backup Log for $HOST - $DATE" $MAILADDR
+    fi
   fi
 else
   if [ -s "$LOGERR" ]; then
