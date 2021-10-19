@@ -375,46 +375,43 @@ echo ======================================================================
   fi
 
   for DB in $DBNAMES; do
-  # Prepare $DB for using
-  DB="`echo $DB | sed 's/%/ /g'`"
-
-  # Create Seperate directory for each DB
-  if [ ! -e "$BACKUPDIR/daily/$DB" ]; then
-    mkdir -p "$BACKUPDIR/daily/$DB"
-  fi
-
-  if [ ! -e "$BACKUPDIR/weekly/$DB" ]; then
-    mkdir -p "$BACKUPDIR/weekly/$DB"
-  fi
-
-  # Weekly Backup
-  if [ "$DNOW" = "$DOWEEKLY" ]; then
-    echo Weekly Backup of Database \( $DB \)
-    echo Rotating 5 weeks Backups...
-    if [ "$W" -le 05 ]; then
-      REMW=`expr 48 + $W`
-    elif [ "$W" -lt 15 ]; then
-      REMW=0`expr $W - 5`
-    else
-      REMW=`expr $W - 5`
+    # Prepare $DB for using
+    DB="`echo $DB | sed 's/%/ /g'`"
+    # Create Seperate directory for each DB
+    if [ ! -e "$BACKUPDIR/daily/$DB" ]; then
+      mkdir -p "$BACKUPDIR/daily/$DB"
     fi
-    rm -fv "$BACKUPDIR/weekly/$DB/${DB}_week.$REMW".*
-    echo
-    dbdump "$DB" "$BACKUPDIR/weekly/$DB/${DB}_week.$W.$DATE.$EXT"
-    compression "$BACKUPDIR/weekly/$DB/${DB}_week.$W.$DATE.$EXT"
-    BACKUPFILES="$BACKUPFILES $BACKUPDIR/weekly/$DB/${DB}_week.$W.$DATE.$EXT$SUFFIX*"
-    echo ----------------------------------------------------------------------
-  # Daily Backup
-  else
-    echo Daily Backup of Database \( $DB \)
-    echo Rotating last weeks Backup...
-    rm -fv "$BACKUPDIR/daily/$DB"/*."$DOW".$EXT*
-    echo
-    dbdump "$DB" "$BACKUPDIR/daily/$DB/${DB}_$DATE.$DOW.$EXT"
-    compression "$BACKUPDIR/daily/$DB/${DB}_$DATE.$DOW.$EXT"
-    BACKUPFILES="$BACKUPFILES $BACKUPDIR/daily/$DB/${DB}_$DATE.$DOW.$EXT$SUFFIX*"
-    echo ----------------------------------------------------------------------
-  fi
+    if [ ! -e "$BACKUPDIR/weekly/$DB" ]; then
+      mkdir -p "$BACKUPDIR/weekly/$DB"
+    fi
+    # Weekly Backup
+    if [ "$DNOW" = "$DOWEEKLY" ]; then
+      echo Weekly Backup of Database \( $DB \)
+      echo Rotating 5 weeks Backups...
+      if [ "$W" -le 05 ]; then
+        REMW=`expr 48 + $W`
+      elif [ "$W" -lt 15 ]; then
+        REMW=0`expr $W - 5`
+      else
+        REMW=`expr $W - 5`
+      fi
+      rm -fv "$BACKUPDIR/weekly/$DB/${DB}_week.$REMW".*
+      echo
+      dbdump "$DB" "$BACKUPDIR/weekly/$DB/${DB}_week.$W.$DATE.$EXT"
+      compression "$BACKUPDIR/weekly/$DB/${DB}_week.$W.$DATE.$EXT"
+      BACKUPFILES="$BACKUPFILES $BACKUPDIR/weekly/$DB/${DB}_week.$W.$DATE.$EXT$SUFFIX*"
+      echo ----------------------------------------------------------------------
+    # Daily Backup
+    else
+      echo Daily Backup of Database \( $DB \)
+      echo Rotating daily backups...
+      find "${BACKUPDIR}/daily/$DB" -mtime +"${ROTATIONDAILY}" -type f -exec rm {} \;
+      echo
+      dbdump "$DB" "$BACKUPDIR/daily/$DB/${DB}_$DATE.$DOW.$EXT"
+      compression "$BACKUPDIR/daily/$DB/${DB}_$DATE.$DOW.$EXT"
+      BACKUPFILES="$BACKUPFILES $BACKUPDIR/daily/$DB/${DB}_$DATE.$DOW.$EXT$SUFFIX*"
+      echo ----------------------------------------------------------------------
+    fi
   done
 echo Backup End `date`
 echo ======================================================================
@@ -451,9 +448,8 @@ echo ======================================================================
   # Daily Backup
   else
     echo Daily Backup of Databases \( $DBNAMES \)
-    echo
-    echo Rotating last weeks Backup...
-    rm -fv "$BACKUPDIR"/daily/*."$DOW".$EXT*
+    echo Rotating daily backups...
+    find "${BACKUPDIR}/daily" -mtime +"${ROTATIONDAILY}" -type f -exec rm {} \;
     echo
       dbdump "$DBNAMES" "$BACKUPDIR/daily/$DATE.$DOW.$EXT"
       compression "$BACKUPDIR/daily/$DATE.$DOW.$EXT"
