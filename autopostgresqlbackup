@@ -79,7 +79,7 @@ SEPDIR=yes
 # Which day do you want weekly backups? (1 to 7 where 1 is Monday)
 DOWEEKLY=6
 
-# Choose Compression type. (gzip, bzip2 or xz)
+# Choose Compression type. (zstd, xz, gzip or bzip2)
 COMP=gzip
 
 # Compress communications between backup server and PostgreSQL server?
@@ -214,9 +214,9 @@ fi
 # set the DOWEEKLY setting, this can be a value from 1 to 7 where 1 is Monday,
 # The default is 6 which means that weekly backups are done on a Saturday.
 #
-# COMP is used to choose the copmression used, options are gzip or bzip2.
+# COMP is used to choose the copmression used, options are zstd, xz, gzip or bzip2.
 # bzip2 will produce slightly smaller files but is more processor intensive so
-# may take longer to complete.
+# may take longer to complete. zstd will produce the smallest files.
 #
 # COMMCOMP is used to set the compression level (from 0 to 9, 0 means no compression)
 # between the client and the server, so it is useful to save bandwidth when backing up
@@ -408,6 +408,10 @@ elif [ "$COMP" = "xz" ]; then
     echo Compression information for "$1.xz"
     xz -9 -v $1 2>&1
     SUFFIX=".xz"
+elif [ "$COMP" = "zstd" ]; then
+    echo Compression information for "$1.zst"
+    zstd -19 --rm -f -v "$1"
+    SUFFIX=".zst"
 else
     echo "No compression option set, check advanced settings"
 fi
