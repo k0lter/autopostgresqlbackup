@@ -76,7 +76,7 @@ CREATE_DATABASE=yes
 # Separate backup directory and file for each DB? (yes or no)
 SEPDIR=yes
 
-# Which day do you want weekly backups? (1 to 7 where 1 is Monday)
+# Which day do you want weekly backups? (1 to 7 where 1 is Monday, 0 for disabling weekly backups)
 DOWEEKLY=6
 
 # Choose Compression type. (gzip, bzip2 or xz)
