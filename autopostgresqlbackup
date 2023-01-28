@@ -96,25 +96,20 @@ EXT="sql"
 PERM=600
 
 # Encryption settings
-# (inspired by http://blog.altudov.com/2010/09/27/using-openssl-for-asymmetric-encryption-of-backups/)
 #
 # It is recommended to backup into a staging directory, and then use the
 # POSTBACKUP script to sync the encrypted files to the desired location.
 #
-# Encryption uses private/public keys. You can generate the key pairs like the following:
-# openssl req -x509 -nodes -days 100000 -newkey rsa:2048 -keyout backup.key -out backup.crt -subj '/'
+# For now the only encryption method supported is using GnuPG
 #
 # Decryption:
-# openssl smime -decrypt -in backup.sql.gz.enc -binary -inform DEM -inkey backup.key -out backup.sql.gz
-
+# gpg --decrypt --output backup.sql.gz backup.sql.gz.enc
+#
 # Enable encryption
 ENCRYPTION=no
 
 # Encryption public key (path to the key)
 ENCRYPTION_PUBLIC_KEY=""
-
-# Encryption Cipher (see enc manpage)
-ENCRYPTION_CIPHER="aes256"
 
 # Suffix for encyrpted files
 ENCRYPTION_SUFFIX=".enc"
@@ -203,6 +198,9 @@ LOG_FILE="${LOG_DIR}/${NAME}_${DBHOST//\//_}-$(date '+%Y-%m-%d_%Hh%Mm').log"
 
 # Debug mode
 DEBUG="no"
+
+# Encryption prerequisites
+GPG_HOMEDIR=
 
 # pg_dump options
 if [ -n "${OPT}" ]; then
@@ -302,6 +300,15 @@ log_warn() {
 }
 # }}}
 
+# {{{ gpg_setup()
+gpg_setup() {
+    GPG_HOMEDIR="$(mktemp --quiet --directory -t "${NAME}.XXXXXX")"
+    chmod 700 "${GPG_HOMEDIR}"
+    log_debug "With encryption enabled creating a temporary GnuPG home in ${GPG_HOMEDIR}"
+    gpg --quiet --homedir "${GPG_HOMEDIR}" --quick-gen-key --batch --passphrase-file /dev/null "root@$(hostname --fqdn)"
+}
+# }}}
+
 # {{{ dblist()
 dblist () {
     local cmd_prog cmd_args raw_dblist dblist dbexcl databases
@@ -385,8 +392,8 @@ dbdump () {
 
 # {{{ encryption()
 encryption() {
-    log_debug "Encrypting using cypher ${ENCRYPTION_CIPHER} and public key ${ENCRYPTION_PUBLIC_KEY}"
-    openssl smime -encrypt -${ENCRYPTION_CIPHER} -binary -outform DEM "${ENCRYPTION_PUBLIC_KEY}" 2>&7
+    log_debug "Encrypting using public key ${ENCRYPTION_PUBLIC_KEY}"
+    gpg --homedir "${GPG_HOMEDIR}" --encrypt --passphrase-file /dev/null --recipient-file "${ENCRYPTION_PUBLIC_KEY}" 2>&7
 }
 # }}}
 
@@ -552,9 +559,28 @@ if [ -n "${COMP}" ]; then
     fi
 fi
 
-if [ "${ENCRYPTION}" = "yes" ] && ! command -v "openssl" >/dev/null ; then
-    log_warn "Disabling encryption, 'openssl' command not found"
-    ENCRYPTION="no"
+if [ "${ENCRYPTION}" = "yes" ]; then
+    if [ ! -s "${ENCRYPTION_PUBLIC_KEY}" ]; then
+        log_warn "Disabling encryption, '${ENCRYPTION_PUBLIC_KEY}' is empty or does not exists"
+        ENCRYPTION="no"
+    elif ! command -v "gpg" >/dev/null ; then
+        log_warn "Disabling encryption, 'gpg' command not found"
+        ENCRYPTION="no"
+    else
+        gpg_setup
+        if ! keyinfo="$(gpg --quiet --homedir "${GPG_HOMEDIR}" "${ENCRYPTION_PUBLIC_KEY}" 2>/dev/null)"; then
+            log_warn "Disabling encryption, key in '${ENCRYPTION_PUBLIC_KEY}' does not seems to be a valid public key"
+            ENCRYPTION="no"
+            if command -v "openssl" >/dev/null && openssl x509 -noout -in "${ENCRYPTION_PUBLIC_KEY}" >/dev/null 2>&1; then
+                log_warn "public key in '${ENCRYPTION_PUBLIC_KEY}' seems to be in PEM format"
+                log_warn "Encryption using openssl is no longer supported: see ${HOMEPAGE}#openssl-encryption"
+            fi
+        else
+            keyfp="$(echo "${keyinfo}" | sed -r -n 's/^\s*([a-z0-9]+)\s*$/\1/pi')"
+            keyuid="$(echo "${keyinfo}" | sed -r -n 's/^\s*uid\s+(\S.*)$/\1/pi' | head -n1)"
+            log_info "Encryption public key is: 0x${keyfp} (${keyuid})"
+        fi
+    fi
 fi
 
 log_info "Backup Start: $(date)"
@@ -637,6 +663,11 @@ if [ -s "${LOGERR}" ]; then
     rc=1
 else
     rc=0
+fi
+
+# Cleanup GnuPG home dir
+if [ -d "${GPG_HOMEDIR}" ]; then
+    rm -rf "${GPG_HOMEDIR}"
 fi
 
 # Clean up log files

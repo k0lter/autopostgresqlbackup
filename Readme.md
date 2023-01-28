@@ -32,6 +32,25 @@ That's it!
  * 2005: AutoPostgreSQLBackup was written by AutoPostgreSQLBackup (with some contributions of Friedrich Lobenstock)
    * Project webpage was http://autopgsqlbackup.frozenpc.net/ (offline)
 
+## Encryption
+
+Encryption (asymmetric) is now done with GnuPG, you just need to add the
+public key (armored or not) you want to encrypt the data to in the file pointed by the `${ENCRYPTION_PUBLIC_KEY}` configuration setting.
+
+Export your public key:
+
+`gpg --export 0xY0URK3Y1D --output mypubkey.gpg`
+
+or
+
+`gpg --export --armor 0xY0URK3Y1D --output mypubkey.asc`
+
+then copy `mypubkey.asc` or `mypubkey.gpg` to the path pointed by the `${ENCRYPTION_PUBLIC_KEY}` configuration setting and set the `${ENCRYPTION}` setting to `yes`.
+
+## OpenSSL Encryption
+
+Starting from version 2.0 encryption with OpenSSL is no longer supported as [it was discovered](https://github.com/k0lter/autopostgresqlbackup/issues/10) (but also [known for quite some time](https://github.com/cytopia/mysqldump-secure/issues/21)) that encrypting large files with [OpenSSL silently fail](https://github.com/openssl/openssl/issues/2515) and that decrypting these files is [close to be impossible](https://github.com/imreFitos/large_smime_decrypt).
+
 ## Authors
 
  * Emmanuel Bouthenot (Current maintainer)
