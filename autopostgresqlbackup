@@ -426,7 +426,7 @@ dump() {
                 comp_ext=".zstd"
                 ;;
         esac
-        dump_file="${dump_file}.${comp_ext}"
+        dump_file="${dump_file}${comp_ext}"
     fi
 
     if [ "${ENCRYPTION}" = "yes" ]; then
