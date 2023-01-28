@@ -45,7 +45,7 @@ DBNAMES="all"
 GLOBALS_OBJECTS="postgres_globals"
 
 # Backup directory location e.g /backups
-BACKUPDIR="/backups"
+BACKUPDIR="/var/backups"
 
 # Email Address to send mail to? (user@domain.com)
 MAILADDR="user@domain.com"
