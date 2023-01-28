@@ -127,10 +127,6 @@ ENCRYPTION_SUFFIX=".enc"
 # }}}
 
 # {{{ OS Specific
-#=====================================================================
-# Debian specific options ===
-#=====================================================================
-
 if [ -f /etc/default/autopostgresqlbackup ]; then
     # shellcheck source=/dev/null
     . /etc/default/autopostgresqlbackup
@@ -634,7 +630,7 @@ if [ "${DEBUG}" = "no" ] && grep -q '^err|' "${LOG_FILE}" ; then
 fi
 # }}}
 
-# {{{ Cleanup logs and exit()
+# {{{ Cleanup and exit()
 if [ -s "${LOGERR}" ]; then
     rc=1
 else
