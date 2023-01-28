@@ -628,7 +628,7 @@ if [ "${DEBUG}" = "no" ] && grep -q '^err|' "${LOG_FILE}" ; then
             fi
         done
         printf "\nFor more information, try to run %s in debug mode, see \`%s -h\`\n" "${NAME}" "$(basename "$0")"
-    ) | mail -s "${NAME} - log" "${MAILADDR}"
+    ) | mail -s "${NAME} issues on $(hostname --fqdn)" "${MAILADDR}"
 fi
 # }}}
 
