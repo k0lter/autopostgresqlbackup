@@ -326,17 +326,17 @@ dblist () {
 
 # {{{ dbdump()
 dbdump () {
-    local db cmd_prog cmd_args pg_args
+    local db_name cmd_prog cmd_args pg_args
 
-    db="${1}"
+    db_name="${1}"
     pg_args="${PG_OPTIONS[*]}"
 
-    if [ "${db}" = "${GLOBALS_OBJECTS}" ]; then
+    if [ "${db_name}" = "${GLOBALS_OBJECTS}" ]; then
         cmd_prog="pg_dumpall"
         cmd_args=(--globals-only)
     else
         cmd_prog="pg_dump"
-        cmd_args=("${DB}")
+        cmd_args=("${db_name}")
         if [ "${CREATE_DATABASE}" = "yes" ]; then
             pg_args+=(--create)
         fi
