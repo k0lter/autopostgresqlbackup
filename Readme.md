@@ -27,7 +27,7 @@ That's it!
 
 ## Documentation
 
-See [the documentation](/Documenation.md).
+See [the documentation](/Documentation.md).
 
 ## History
 
