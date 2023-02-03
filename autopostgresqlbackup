@@ -23,71 +23,88 @@
 # }}}
 
 # {{{ Variables
-# Username to access the PostgreSQL server e.g. dbuser
-USERNAME=postgres
 
-# Password
-# create a file ${HOME}/.pgpass containing a line like this
-#   hostname:*:*:dbuser:dbpass
-# replace hostname with the value of DBHOST and postgres with
-# the value of USERNAME
+# Email Address to send errors to
+MAILADDR="root"
 
-# Host name (or IP address) of PostgreSQL server e.g localhost
-DBHOST=localhost
+# By default, on Debian systems (and maybe others), only postgres user is
+# allowed to access PostgreSQL databases without password.
+#
+# In order to dump databases we need to run pg_dump/psql commands as postgres
+# with su. This setting makes possible to run backups with a substitute user
+# using su. If
+#
+# empty, su usage will be disabled)
+SU_USERNAME=
 
-# Port of PostgreSQL server e.g 5432 (only used if DBHOST != localhost)
-DBPORT=5432
+# Username to access the PostgreSQL server
+USERNAME="postgres"
 
-# List of DBNAMES for Daily/Weekly Backup e.g. "DB1 DB2 DB3"
+# Password settings
+# In order to use a password to connect to database create a file
+# ${HOME}/.pgpass containing a line like this
+#
+# hostname:*:*:dbuser:dbpass
+#
+# replace hostname with the value of ${DBHOST}, dbuser with the value of
+# ${USERNAME} and dbpass with the password.
+
+# Host name (or IP address) of PostgreSQL server
+DBHOST="localhost"
+
+# Port of PostgreSQL server (only used if ${DBHOST} != localhost).
+DBPORT="5432"
+
+# List of database(s) names(s) to backup If you would like to backup all
+# databases on the server set DBNAMES="all".
+#
+# If set to "all" then any new databases will automatically be backed up
+# without needing to modify this settings when a new database is created.
+#
+# If the database you want to backup has a space in the name replace the space
+# with a % ("data base" will become "data%base").
 DBNAMES="all"
 
-# pseudo database name used to dump global objects (users, roles, tablespaces)
-GLOBALS_OBJECTS="postgres_globals"
-
-# Backup directory location e.g /backups
-BACKUPDIR="/var/backups"
-
-# Email Address to send mail to? (user@domain.com)
-MAILADDR="user@domain.com"
-
-# ============================================================
-# === ADVANCED OPTIONS ( Read the doc's below for details )===
-#=============================================================
-
-# List of DBNAMES to EXLUCDE if DBNAMES are set to all (must be in " quotes)
+# List of databases to exclude if DBNAMES is not set to all.
 DBEXCLUDE=""
 
-# Include CREATE DATABASE in backup?
-CREATE_DATABASE=yes
+# Pseudo database name used to dump global objects (users, roles, tablespaces)
+GLOBALS_OBJECTS="postgres_globals"
+
+# Backup directory
+BACKUPDIR="/var/backups"
+
+# Include CREATE DATABASE in backups?
+CREATE_DATABASE="yes"
 
 # Which day do you want weekly backups? (1 to 7 where 1 is Monday)
 # When set to 0, weekly backups are disabled
-DOWEEKLY=6
+DOWEEKLY=7
 
-# Which day do you want monthly backups? (default is 1, first day of the month)
+# Which day do you want monthly backups?
 # When set to 0, monthly backups are disabled
 DOMONTHLY=1
 
-# Backup retention count for daily backups
-# Default is 14 days
+# Backup retention count for daily backups, older backups are removed.
 BRDAILY=14
 
-# Backup retention count for weekly backups
-# Default is 5 weeks
+# Backup retention count for weekly backups, older backups are removed.
 BRWEEKLY=5
 
-# Backup retention count for monthly backups
-# Default is 12 months
+# Backup retention count for monthly backups, older backups are removed.
 BRMONTHLY=12
 
-# Choose Compression type. (gzip, pigz, bzip2, xz or zstd)
-COMP=gzip
+# Compression tool. It could be gzip, pigz, bzip2, xz, zstd or any compression
+# tool that supports to read data to be compressed from stdin and outputs them
+# to stdout).
+# If the tool is not in ${PATH}, the absolute path can be used.
+COMP="gzip"
 
-# Compression options
+# Compression tools options to be used with COMP
 COMP_OPTS=
 
-# OPT string for use with pg_dump (see man pg_dump)
-OPT=""
+# Options string for use with pg_dump (see pg_dump manual page).
+OPT=
 
 # Backup files extension
 EXT="sql"
@@ -95,30 +112,29 @@ EXT="sql"
 # Backup files permission
 PERM=600
 
-# Encryption settings
-#
-# It is recommended to backup into a staging directory, and then use the
-# POSTBACKUP script to sync the encrypted files to the desired location.
-#
-# For now the only encryption method supported is using GnuPG
-#
-# Decryption:
-# gpg --decrypt --output backup.sql.gz backup.sql.gz.enc
-#
-# Enable encryption
-ENCRYPTION=no
+# Enable encryption (asymmetric) with GnuPG.
+ENCRYPTION="no"
 
 # Encryption public key (path to the key)
-ENCRYPTION_PUBLIC_KEY=""
+# Export your public key=""
+#     gpg --export 0xY0URK3Y1D --output mypubkey.gpg or \
+#     gpg --export --armor 0xY0URK3Y1D --output mypubkey.asc
+#     then copy mypubkey.asc or mypubkey.gpg to the path pointed by the
+#     ${ENCRYPTION_PUBLIC_KEY}.
+#
+# Decryption
+#     gpg --decrypt --output backup.sql.gz backup.sql.gz.enc
+#
+ENCRYPTION_PUBLIC_KEY=
 
 # Suffix for encyrpted files
 ENCRYPTION_SUFFIX=".enc"
 
-# Command to run before backups (uncomment to use)
-#PREBACKUP="/etc/postgresql-backup-pre"
+# Command or script to execute before backups
+PREBACKUP=
 
-# Command run after backups (uncomment to use)
-#POSTBACKUP="/etc/postgresql-backup-post"
+# Command or script to execute after backups
+POSTBACKUP=
 # }}}
 
 # {{{ OS Specific
@@ -126,54 +142,6 @@ if [ -f /etc/default/autopostgresqlbackup ]; then
     # shellcheck source=/dev/null
     . /etc/default/autopostgresqlbackup
 fi
-# }}}
-
-# {{{ Documentation
-#=====================================================================
-# Options documentation
-#=====================================================================
-# Set USERNAME and PASSWORD of a user that has at least SELECT permission to
-# ALL databases.
-#
-# Set the DBHOST option to the server you wish to backup, leave the default to
-# backup "this server". To backup multiple servers make copies of this file and
-# set the options for that server.
-#
-# Put in the list of DBNAMES (Databases) to be backed up. If you would like to
-# backup ALL DBs on the server set DBNAMES="all". If set to "all" then any new
-# DBs will automatically be backed up without needing to modify this backup
-# script when a new DB is created.
-#
-# If the DB you want to backup has a space in the name replace the space with a
-# % e.g. "data base" will become "data%base"
-#
-# You can change the backup storage location to anything you like by using the
-# BACKUPDIR setting.
-#
-# === Advanced options doc's ===
-#
-# If you set DBNAMES="all" you can configure the option DBEXCLUDE. Other wise
-# this option will not be used. This option can be used if you want to backup
-# all dbs, but you want exclude some of them. (eg. if a db is to big).
-#
-# Set CREATE_DATABASE to "yes" (the default) if you want your SQL-Dump to
-# create a database with the same name as the original database when restoring.
-# Saying "no" here will allow your to specify the database name you want to
-# restore your dump into, making a copy of the database by using the dump
-# created with autopostgresqlbackup.
-#
-# Use PREBACKUP and POSTBACKUP to specify Per and Post backup commands
-# or scripts to perform tasks either before or after the backup process.
-#
-#=====================================================================
-# Backup Rotation..
-#=====================================================================
-#
-# Rotation is configurable for each period:
-#  - daily (max $BRDAILY backups are keeped)
-#  - weekly (max $BRWEEKLY backups are keeped)
-#  - monthy (max $BRMONTHLY backups are keeped)
-#
 # }}}
 
 # {{{ Defaults

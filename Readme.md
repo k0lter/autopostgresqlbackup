@@ -25,6 +25,10 @@ If the default options are not suitable for you, change them: `${EDITOR} /etc/de
 
 That's it!
 
+## Documentation
+
+See [the documentation](/Documenation.md).
+
 ## History
 
  * 2023: Almost full rewrite with better error handling and new features (see Changelog.md for details)
