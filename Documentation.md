@@ -152,6 +152,12 @@ Backup files permission
 
 **default**: `600`
 
+### `MIN_DUMP_SIZE`
+
+Minimum size (in bytes) for a dump/file (compressed or not). File size below this limit will raise an warning.
+
+**default**: `256`
+
 ### `ENCRYPTION`
 
 Enable encryption (asymmetric) with GnuPG.

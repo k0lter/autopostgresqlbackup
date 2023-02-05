@@ -115,6 +115,10 @@ EXT="sql"
 # Backup files permission
 PERM=600
 
+# Minimum size (in bytes) for a dump/file (compressed or not).
+# File size below this limit will raise an warning.
+MIN_DUMP_SIZE=256
+
 # Enable encryption (asymmetric) with GnuPG.
 ENCRYPTION="no"
 
@@ -440,8 +444,11 @@ dump() {
     if [ -f "${dump_file}" ]; then
         log_debug "Fixing permissions (${PERM}) on '${dump_file}'"
         chmod "${PERM}" "${dump_file}"
+        fsize=$(stat -c '%s' "${dump_file}")
         if [ ! -s "${dump_file}" ]; then
-            log_error "Something went wrong '${dump_file}' is empty (no space left on device?)"
+            log_error "Something went wrong '${dump_file}' is empty"
+        elif [ "${fsize}" -lt "${MIN_DUMP_SIZE}" ]; then
+            log_warn "'${dump_file}' (${fsize} bytes) is below the minimum required size (${MIN_DUMP_SIZE} bytes)"
         fi
     else
         log_error "Something went wrong '${dump_file}' does not exists (error during dump?)"

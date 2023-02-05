@@ -4,6 +4,7 @@
 
 * Variable `OPT` (used with pg_dump) is renamed to `PGDUMP_OPTS` and a new variable `PGDUMPALL_OPTS` is available (used for dump globals with pg_dumpall) (Closes: [#12](https://github.com/k0lter/autopostgresqlbackup/issues/12))
 * Fix stderr capture and check return code while running pg_dump/pg_dumpall commands
+* Add `MIN_DUMP_SIZE` configuration variable to raise a warning when a backup file size is below this limit (Closes: [#15](https://github.com/k0lter/autopostgresqlbackup/issues/15))
 
 ## Version 2.0
 
