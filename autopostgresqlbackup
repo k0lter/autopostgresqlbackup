@@ -104,7 +104,10 @@ COMP="gzip"
 COMP_OPTS=
 
 # Options string for use with pg_dump (see pg_dump manual page).
-OPT=
+PGDUMP_OPTS=
+
+# Options string for use with pg_dumpall (see pg_dumpall manual page).
+PGDUMPALL_OPTS=
 
 # Backup files extension
 EXT="sql"
@@ -171,10 +174,17 @@ DEBUG="no"
 GPG_HOMEDIR=
 
 # pg_dump options
-if [ -n "${OPT}" ]; then
-    IFS=" " read -r -a PG_OPTIONS <<< "${OPT}"
+if [ -n "${PGDUMP_OPTS}" ]; then
+    IFS=" " read -r -a PGDUMP_ARGS <<< "${PGDUMP_OPTS}"
 else
-    PG_OPTIONS=()
+    PGDUMP_ARGS=()
+fi
+
+# pg_dumpall options
+if [ -n "${PGDUMPALL_OPTS}" ]; then
+    IFS=" " read -r -a PGDUMPALL_ARGS <<< "${PGDUMPALL_OPTS}"
+else
+    PGDUMPALL_ARGS=()
 fi
 
 # Create required directories
@@ -329,14 +339,15 @@ dbdump () {
     local db_name cmd_prog cmd_args pg_args
 
     db_name="${1}"
-    pg_args="${PG_OPTIONS[*]}"
 
     if [ "${db_name}" = "${GLOBALS_OBJECTS}" ]; then
         cmd_prog="pg_dumpall"
         cmd_args=(--globals-only)
+        pg_args="${PGDUMPALL_ARGS[*]}"
     else
         cmd_prog="pg_dump"
         cmd_args=("${db_name}")
+        pg_args="${PGDUMP_ARGS[*]}"
         if [ "${CREATE_DATABASE}" = "yes" ]; then
             pg_args+=(--create)
         fi

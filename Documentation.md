@@ -128,9 +128,15 @@ COMP="zstd"
 COMP_OPTS="-f -c"
 ```
 
-### `OPT`
+### `PGDUMP_OPTS`
 
 Options string for use with pg_dump (see [pg_dump](https://www.postgresql.org/docs/current/app-pgdump.html) manual page).
+
+**default**: `""` (empty)
+
+### `PGDUMPALL_OPTS`
+
+Options string for use with pg_dumpall (see [pg_dumpall](https://www.postgresql.org/docs/current/app-pg-dumpall.html) manual page).
 
 **default**: `""` (empty)
 

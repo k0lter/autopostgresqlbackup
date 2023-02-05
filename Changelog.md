@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 2.1
+
+Variable `OPT` (used with pg_dump) is renamed to `PGDUMP_OPTS` and a new variable `PGDUMPALL_OPTS` is available (used for dump globals with pg_dumpall) (Closes: [#12](https://github.com/k0lter/autopostgresqlbackup/issues/12))
+
 ## Version 2.0
 
 * Huge code cleanup and refactoring (Closes: [#2](https://github.com/k0lter/autopostgresqlbackup/issues/2))
