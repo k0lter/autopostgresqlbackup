@@ -301,9 +301,11 @@ dblist () {
     log_debug "Running command: ${cmd_prog} ${cmd_args[*]}"
     raw_dblist=$(
         if [ -n "${SU_USERNAME}" ]; then
-            su - "${SU_USERNAME}" -l -c "${cmd_prog} ${cmd_args[*]}"
-        else
-            "${cmd_prog}" "${cmd_args[@]}"
+            if ! su - "${SU_USERNAME}" -c "${cmd_prog} ${cmd_args[*]}" 2> >(logger "err" "error"); then
+                log_error "Running (as user '${SU_USERNAME}' command '${cmd_prog} ${cmd_args[*]}' has failed"
+            fi
+        elif ! "${cmd_prog}" "${cmd_args[@]}" 2> >(logger "err" "error"); then
+            log_error "Running command '${cmd_prog} ${cmd_args[*]}' has failed"
         fi
     )
 
@@ -362,9 +364,11 @@ dbdump () {
 
     log_debug "Running command: ${cmd_prog} ${cmd_args[*]}"
     if [ -n "${SU_USERNAME}" ]; then
-        su - "${SU_USERNAME}" -l -c "${cmd_prog} ${cmd_args[*]}"
-    else
-        "${cmd_prog}" "${cmd_args[@]}"
+        if ! su - "${SU_USERNAME}" -c "${cmd_prog} ${cmd_args[*]}" 2> >(logger "err" "error"); then
+            log_error "Running (as user '${SU_USERNAME}' command '${cmd_prog} ${cmd_args[*]}' has failed"
+        fi
+    elif ! "${cmd_prog}" "${cmd_args[@]}" 2> >(logger "err" "error"); then
+        log_error "Running command '${cmd_prog} ${cmd_args[*]}' has failed"
     fi
 }
 # }}}
