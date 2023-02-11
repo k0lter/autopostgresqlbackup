@@ -380,7 +380,7 @@ dbdump () {
 # {{{ encryption()
 encryption() {
     log_debug "Encrypting using public key ${ENCRYPTION_PUBLIC_KEY}"
-    gpg --homedir "${GPG_HOMEDIR}" --encrypt --passphrase-file /dev/null --recipient-file "${ENCRYPTION_PUBLIC_KEY}" 2>&7
+    gpg --homedir "${GPG_HOMEDIR}" --encrypt --passphrase-file /dev/null --recipient-file "${ENCRYPTION_PUBLIC_KEY}" 2> >(logger "err" "error")
 }
 # }}}
 
@@ -389,10 +389,10 @@ compression () {
     if [ -n "${COMP_OPTS}" ]; then
         IFS=" " read -r -a comp_args <<< "${COMP_OPTS}"
         log_debug "Compressing using '${COMP} ${comp_args[*]}'"
-        "${COMP}" "${comp_args[@]}" 2>&7
+        "${COMP}" "${comp_args[@]}" 2> >(logger "err" "error")
     else
         log_debug "Compressing using '${COMP}'"
-        "${COMP}" 2>&7
+        "${COMP}" 2> >(logger "err" "error")
     fi
 }
 # }}}
