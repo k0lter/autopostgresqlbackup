@@ -475,7 +475,7 @@ cleanup() {
         sed -r 's/^.+([0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}h[0-9]{2}m).*$/\1 \0/' | \
         sort -r | \
         sed -r -n 's/\S+ //p' | \
-        tail "+${count}" | \
+        tail -n "+${count}" | \
         xargs -L1 rm -fv | \
         while IFS= read -r line ; do
             log_info "${line}"
