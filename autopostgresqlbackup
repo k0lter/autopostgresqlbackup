@@ -349,11 +349,11 @@ dbdump () {
     if [ "${db_name}" = "${GLOBALS_OBJECTS}" ]; then
         cmd_prog="pg_dumpall"
         cmd_args=(--globals-only)
-        pg_args="${PGDUMPALL_ARGS[*]}"
+        pg_args=("${PGDUMPALL_ARGS[@]}")
     else
         cmd_prog="pg_dump"
         cmd_args=("${db_name}")
-        pg_args="${PGDUMP_ARGS[*]}"
+        pg_args=("${PGDUMP_ARGS[@]}")
         if [ "${CREATE_DATABASE}" = "yes" ]; then
             pg_args+=(--create)
         fi
