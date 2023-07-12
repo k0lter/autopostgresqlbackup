@@ -211,7 +211,7 @@ fi
 # Hostname for LOG information and
 # pg_dump{,all} connection settings
 if [ "${DBHOST}" = "localhost" ]; then
-    HOST="$(hostname --fqdn)"
+    HOST="$(uname -n)"
     PG_CONN=()
 else
     HOST="${DBHOST}:${DBPORT}"
@@ -287,7 +287,7 @@ gpg_setup() {
     GPG_HOMEDIR="$(mktemp --quiet --directory -t "${NAME}.XXXXXX")"
     chmod 700 "${GPG_HOMEDIR}"
     log_debug "With encryption enabled creating a temporary GnuPG home in ${GPG_HOMEDIR}"
-    gpg --quiet --homedir "${GPG_HOMEDIR}" --quick-gen-key --batch --passphrase-file /dev/null "root@$(hostname --fqdn)"
+    gpg --quiet --homedir "${GPG_HOMEDIR}" --quick-gen-key --batch --passphrase-file /dev/null "root@$(uname -n)"
 }
 # }}}
 
@@ -444,7 +444,7 @@ dump() {
     if [ -f "${dump_file}" ]; then
         log_debug "Fixing permissions (${PERM}) on '${dump_file}'"
         chmod "${PERM}" "${dump_file}"
-        fsize=$(stat -c '%s' "${dump_file}")
+        fsize=$(wc -c < "${dump_file}")
         if [ ! -s "${dump_file}" ]; then
             log_error "Something went wrong '${dump_file}' is empty"
         elif [ "${fsize}" -lt "${MIN_DUMP_SIZE}" ]; then
@@ -644,7 +644,7 @@ if [ "${DEBUG}" = "no" ] && grep -q '^err|' "${LOG_FILE}" ; then
             fi
         done
         printf "\nFor more information, try to run %s in debug mode, see \`%s -h\`\n" "${NAME}" "$(basename "$0")"
-    ) | mail -s "${NAME} issues on $(hostname --fqdn)" "${MAILADDR}"
+    ) | mail -s "${NAME} issues on $(uname -n)" "${MAILADDR}"
 fi
 # }}}
 
