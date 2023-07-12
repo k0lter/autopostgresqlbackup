@@ -161,7 +161,7 @@ DNOW="$(date '+%u')"                # Day number of the week 1 to 7 where 1 repr
 DNOM="$(date '+%d')"                # Date of the Month e.g. 27
 LOG_DIR="${BACKUPDIR}"              # Directory where the main log is saved
 # Fix day of month (left padding with 0)
-DOMONTHLY="$(echo "${DOMONTHLY}" | sed -r 's/^[0-9]$/0\0/')"
+DOMONTHLY="$(printf '%.2i' "${DOMONTHLY}")"
 
 # Using a shared memory filesystem (if available) to avoid
 # issues when there is no left space on backup storage
