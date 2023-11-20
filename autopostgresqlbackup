@@ -472,7 +472,7 @@ cleanup() {
     log_info "Rotating ${count} ${when} backups..."
     log_debug "Looking for '${db}_*' in '${dumpdir}/${when}/${db}'"
     find "${dumpdir}/${when}/${db}/" -name "${db}_*" | \
-        sed -E 's/^.+([0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}h[0-9]{2}m).*$/\1 \0/' | \
+        sed -E 's/(^.+([0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}h[0-9]{2}m).*$)/\2 \1/' | \
         sort -r | \
         sed -E -n 's/\S+ //p' | \
         tail -n "+${count}" | \
