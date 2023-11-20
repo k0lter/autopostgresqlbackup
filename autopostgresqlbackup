@@ -161,7 +161,7 @@ DNOW="$(date '+%u')"                # Day number of the week 1 to 7 where 1 repr
 DNOM="$(date '+%d')"                # Date of the Month e.g. 27
 LOG_DIR="${BACKUPDIR}"              # Directory where the main log is saved
 # Fix day of month (left padding with 0)
-DOMONTHLY="$(echo "${DOMONTHLY}" | sed -r 's/^[0-9]$/0\0/')"
+DOMONTHLY="$(printf '%.2i' "${DOMONTHLY}")"
 
 # Using a shared memory filesystem (if available) to avoid
 # issues when there is no left space on backup storage
@@ -211,7 +211,7 @@ fi
 # Hostname for LOG information and
 # pg_dump{,all} connection settings
 if [ "${DBHOST}" = "localhost" ]; then
-    HOST="$(hostname --fqdn)"
+    HOST="$(uname -n)"
     PG_CONN=()
 else
     HOST="${DBHOST}:${DBPORT}"
@@ -287,7 +287,7 @@ gpg_setup() {
     GPG_HOMEDIR="$(mktemp --quiet --directory -t "${NAME}.XXXXXX")"
     chmod 700 "${GPG_HOMEDIR}"
     log_debug "With encryption enabled creating a temporary GnuPG home in ${GPG_HOMEDIR}"
-    gpg --quiet --homedir "${GPG_HOMEDIR}" --quick-gen-key --batch --passphrase-file /dev/null "root@$(hostname --fqdn)"
+    gpg --quiet --homedir "${GPG_HOMEDIR}" --quick-gen-key --batch --passphrase-file /dev/null "root@$(uname -n)"
 }
 # }}}
 
@@ -315,7 +315,7 @@ dblist () {
 
     read -r -a dblist <<< "$(
         printf "%s" "${raw_dblist}" | \
-            sed -r -n 's/^([^:]+):.+$/\1/p' | \
+            sed -E -n 's/^([^:]+):.+$/\1/p' | \
             tr '\n' ' '
     )"
     log_debug "Automatically found databases: ${dblist[*]}"
@@ -444,7 +444,7 @@ dump() {
     if [ -f "${dump_file}" ]; then
         log_debug "Fixing permissions (${PERM}) on '${dump_file}'"
         chmod "${PERM}" "${dump_file}"
-        fsize=$(stat -c '%s' "${dump_file}")
+        fsize=$(wc -c < "${dump_file}")
         if [ ! -s "${dump_file}" ]; then
             log_error "Something went wrong '${dump_file}' is empty"
         elif [ "${fsize}" -lt "${MIN_DUMP_SIZE}" ]; then
@@ -472,9 +472,9 @@ cleanup() {
     log_info "Rotating ${count} ${when} backups..."
     log_debug "Looking for '${db}_*' in '${dumpdir}/${when}/${db}'"
     find "${dumpdir}/${when}/${db}/" -name "${db}_*" | \
-        sed -r 's/^.+([0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}h[0-9]{2}m).*$/\1 \0/' | \
+        sed -E 's/(^.+([0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}h[0-9]{2}m).*$)/\2 \1/' | \
         sort -r | \
-        sed -r -n 's/\S+ //p' | \
+        sed -E -n 's/\S+ //p' | \
         tail -n "+${count}" | \
         xargs -L1 rm -fv | \
         while IFS= read -r line ; do
@@ -566,8 +566,8 @@ if [ "${ENCRYPTION}" = "yes" ]; then
                 log_warn "Encryption using openssl is no longer supported: see ${HOMEPAGE}#openssl-encryption"
             fi
         else
-            keyfp="$(echo "${keyinfo}" | sed -r -n 's/^\s*([a-z0-9]+)\s*$/\1/pi')"
-            keyuid="$(echo "${keyinfo}" | sed -r -n 's/^\s*uid\s+(\S.*)$/\1/pi' | head -n1)"
+            keyfp="$(echo "${keyinfo}" | sed -E -n 's/^\s*([a-z0-9]+)\s*$/\1/pi')"
+            keyuid="$(echo "${keyinfo}" | sed -E -n 's/^\s*uid\s+(\S.*)$/\1/pi' | head -n1)"
             log_info "Encryption public key is: 0x${keyfp} (${keyuid})"
         fi
     fi
@@ -644,7 +644,7 @@ if [ "${DEBUG}" = "no" ] && grep -q '^err|' "${LOG_FILE}" ; then
             fi
         done
         printf "\nFor more information, try to run %s in debug mode, see \`%s -h\`\n" "${NAME}" "$(basename "$0")"
-    ) | mail -s "${NAME} issues on $(hostname --fqdn)" "${MAILADDR}"
+    ) | mail -s "${NAME} issues on $(uname -n)" "${MAILADDR}"
 fi
 # }}}
 
