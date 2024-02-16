@@ -52,7 +52,7 @@ USERNAME="postgres"
 # Host name (or IP address) of PostgreSQL server
 DBHOST="localhost"
 
-# Port of PostgreSQL server (only used if ${DBHOST} != localhost).
+# Port of PostgreSQL server (now used even if ${DBHOST} == localhost).
 DBPORT="5432"
 
 # List of database(s) names(s) to backup If you would like to backup all
@@ -211,8 +211,8 @@ fi
 # Hostname for LOG information and
 # pg_dump{,all} connection settings
 if [ "${DBHOST}" = "localhost" ]; then
-    HOST="$(hostname --fqdn)"
-    PG_CONN=()
+    HOST="$(hostname --fqdn):${DBPORT}"
+    PG_CONN=(--port "${DBPORT}")
 else
     HOST="${DBHOST}:${DBPORT}"
     PG_CONN=(--host "${DBHOST}" --port "${DBPORT}")
