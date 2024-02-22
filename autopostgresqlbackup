@@ -627,29 +627,32 @@ exec 2>&7 7>&-      # Restore stdout and close file descriptor #7.
 # }}}
 
 # {{{ Reporting
-if [ "${DEBUG}" = "no" ] && grep -q '^err|' "${LOG_FILE}" ; then
-    (
-        printf "*Errors/Warnings* (below) reported during backup on *%s*:\n\n" "${HOST}"
-        grep '^err|' "${LOG_FILE}" | cut -d '|' -f 3- | \
-        while IFS= read -r line ; do
-            printf "  | %s\n" "${line}"
-        done
-        printf "\n\nFull backup log follows:\n\n"
-        grep -v '^...|debug|' "${LOG_FILE}" | \
-        while IFS="|" read -r fd level line ; do
-            if [ -n "${level}" ]; then
-                printf "%8s| %s\n" "*${level}*" "${line}"
-            else
-                printf "%8s| %s\n" "" "${line}"
-            fi
-        done
-        printf "\nFor more information, try to run %s in debug mode, see \`%s -h\`\n" "${NAME}" "$(basename "$0")"
-    ) | mail -s "${NAME} issues on $(hostname --fqdn)" "${MAILADDR}"
+if grep -q '^err|' "${LOG_FILE}" ; then
+	LOGERR=1
+	if [ "${DEBUG}" = "no" ] ; then
+		(
+			printf "*Errors/Warnings* (below) reported during backup on *%s*:\n\n" "${HOST}"
+			grep '^err|' "${LOG_FILE}" | cut -d '|' -f 3- | \
+				while IFS= read -r line ; do
+					printf "  | %s\n" "${line}"
+				done
+			printf "\n\nFull backup log follows:\n\n"
+			grep -v '^...|debug|' "${LOG_FILE}" | \
+				while IFS="|" read -r fd level line ; do
+					if [ -n "${level}" ]; then
+						printf "%8s| %s\n" "*${level}*" "${line}"
+					else
+						printf "%8s| %s\n" "" "${line}"
+					fi
+				done
+			printf "\nFor more information, try to run %s in debug mode, see \`%s -h\`\n" "${NAME}" "$(basename "$0")"
+		) | mail -s "${NAME} issues on $(hostname --fqdn)" "${MAILADDR}"
+	fi
 fi
 # }}}
 
 # {{{ Cleanup and exit()
-if [ -s "${LOGERR}" ]; then
+if [ "${LOGERR}" ]; then
     rc=1
 else
     rc=0
