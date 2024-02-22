@@ -630,6 +630,7 @@ exec 2>&7 7>&-      # Restore stdout and close file descriptor #7.
 if grep -q '^err|' "${LOG_FILE}" ; then
 	LOGERR=1
 	if [ "${DEBUG}" = "no" ] ; then
+		TMP_ERR_FILE=$(mktemp)
 		(
 			printf "*Errors/Warnings* (below) reported during backup on *%s*:\n\n" "${HOST}"
 			grep '^err|' "${LOG_FILE}" | cut -d '|' -f 3- | \
@@ -646,7 +647,13 @@ if grep -q '^err|' "${LOG_FILE}" ; then
 					fi
 				done
 			printf "\nFor more information, try to run %s in debug mode, see \`%s -h\`\n" "${NAME}" "$(basename "$0")"
-		) | mail -s "${NAME} issues on $(hostname --fqdn)" "${MAILADDR}"
+		) > "${TMP_ERR_FILE}"
+		if [ -n "${MAILADDR}" ] ; then
+			mail -s "${NAME} issues on $(hostname --fqdn)" "${MAILADDR}" < "${TMP_ERR_FILE}"
+		else
+			cat "${TMP_ERR_FILE}" >&2
+		fi
+		rm "${TMP_ERR_FILE}"
 	fi
 fi
 # }}}
