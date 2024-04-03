@@ -177,20 +177,6 @@ DEBUG="no"
 # Encryption prerequisites
 GPG_HOMEDIR=
 
-# pg_dump options
-if [ -n "${PGDUMP_OPTS}" ]; then
-    IFS=" " read -r -a PGDUMP_ARGS <<< "${PGDUMP_OPTS}"
-else
-    PGDUMP_ARGS=()
-fi
-
-# pg_dumpall options
-if [ -n "${PGDUMPALL_OPTS}" ]; then
-    IFS=" " read -r -a PGDUMPALL_ARGS <<< "${PGDUMPALL_OPTS}"
-else
-    PGDUMPALL_ARGS=()
-fi
-
 # Create required directories
 if [ ! -e "${BACKUPDIR}" ]; then         # Check Backup Directory exists.
     mkdir -p "${BACKUPDIR}"
@@ -208,18 +194,18 @@ if [ ! -e "${BACKUPDIR}/monthly" ]; then # Check Monthly Directory exists.
     mkdir -p "${BACKUPDIR}/monthly"
 fi
 
-# Hostname for LOG information and
-# pg_dump{,all} connection settings
-if [ "${DBHOST}" = "localhost" ]; then
-    HOST="$(hostname --fqdn)"
-    PG_CONN=()
-else
-    HOST="${DBHOST}:${DBPORT}"
-    PG_CONN=(--host "${DBHOST}" --port "${DBPORT}")
+# Hostname
+HOSTNAME="$(uname -n)"
+if [[ "${HOSTNAME}" != *.* ]]; then
+    HOSTNAME="$(hostname --fqdn)"
 fi
-if [ -n "${USERNAME}" ]; then
-    PG_CONN+=(--username "${USERNAME}")
+
+HOST="${HOSTNAME}"
+if [ "${DBHOST}" != "localhost" ]; then
+    HOST="${HOSTNAME}:${DBPORT}"
 fi
+
+CONN_ARGS=()
 # }}}
 
 # {{{ log{,ger,_info,_debug,_warn,_error}()
@@ -287,19 +273,50 @@ gpg_setup() {
     GPG_HOMEDIR="$(mktemp --quiet --directory -t "${NAME}.XXXXXX")"
     chmod 700 "${GPG_HOMEDIR}"
     log_debug "With encryption enabled creating a temporary GnuPG home in ${GPG_HOMEDIR}"
-    gpg --quiet --homedir "${GPG_HOMEDIR}" --quick-gen-key --batch --passphrase-file /dev/null "root@$(hostname --fqdn)"
+    gpg --quiet --homedir "${GPG_HOMEDIR}" --quick-gen-key --batch --passphrase-file /dev/null "root@${HOSTNAME}"
 }
 # }}}
 
-# {{{ dblist()
-dblist () {
+# {{{ encryption()
+encryption() {
+    log_debug "Encrypting using public key ${ENCRYPTION_PUBLIC_KEY}"
+    gpg --homedir "${GPG_HOMEDIR}" --encrypt --passphrase-file /dev/null --recipient-file "${ENCRYPTION_PUBLIC_KEY}" 2> >(logger "err" "error")
+}
+# }}}
+
+# {{{ compression()
+compression () {
+    if [ -n "${COMP_OPTS}" ]; then
+        IFS=" " read -r -a comp_args <<< "${COMP_OPTS}"
+        log_debug "Compressing using '${COMP} ${comp_args[*]}'"
+        "${COMP}" "${comp_args[@]}" 2> >(logger "err" "error")
+    else
+        log_debug "Compressing using '${COMP}'"
+        "${COMP}" 2> >(logger "err" "error")
+    fi
+}
+# }}}
+
+# {{{ pgdb_init()
+pgdb_init () {
+    if [ "${DBHOST}" != "localhost" ]; then
+        CONN_ARGS=(--host "${DBHOST}" --port "${DBPORT}")
+    fi
+    if [ -n "${USERNAME}" ]; then
+        CONN_ARGS+=(--username "${USERNAME}")
+    fi
+}
+# }}}
+
+# {{{ pgdb_list()
+pgdb_list () {
     local cmd_prog cmd_args raw_dblist dblist dbexcl databases
 
     cmd_prog="psql"
     cmd_args=(-t -l -A -F:)
 
-    if [ "${#PG_CONN[@]}" -gt 0 ]; then
-        cmd_args+=("${PG_CONN[@]}")
+    if [ "${#CONN_ARGS[@]}" -gt 0 ]; then
+        cmd_args+=("${CONN_ARGS[@]}")
     fi
 
     log_debug "Running command: ${cmd_prog} ${cmd_args[*]}"
@@ -340,11 +357,24 @@ dblist () {
 }
 # }}}
 
-# {{{ dbdump()
-dbdump () {
+# {{{ pgdb_dump()
+pgdb_dump () {
     local db_name cmd_prog cmd_args pg_args
 
     db_name="${1}"
+
+    if [ -n "${PGDUMP_OPTS}" ]; then
+        IFS=" " read -r -a PGDUMP_ARGS <<< "${PGDUMP_OPTS}"
+    else
+        PGDUMP_ARGS=()
+    fi
+
+    # pg_dumpall options
+    if [ -n "${PGDUMPALL_OPTS}" ]; then
+        IFS=" " read -r -a PGDUMPALL_ARGS <<< "${PGDUMPALL_OPTS}"
+    else
+        PGDUMPALL_ARGS=()
+    fi
 
     if [ "${db_name}" = "${GLOBALS_OBJECTS}" ]; then
         cmd_prog="pg_dumpall"
@@ -359,8 +389,8 @@ dbdump () {
         fi
     fi
 
-    if [ "${#PG_CONN[@]}" -gt 0 ]; then
-        cmd_args+=("${PG_CONN[@]}")
+    if [ "${#CONN_ARGS[@]}" -gt 0 ]; then
+        cmd_args+=("${CONN_ARGS[@]}")
     fi
     if [ "${#pg_args[@]}" -gt 0 ]; then
         cmd_args+=("${pg_args[@]}")
@@ -373,26 +403,6 @@ dbdump () {
         fi
     elif ! "${cmd_prog}" "${cmd_args[@]}" 2> >(logger "err" "error"); then
         log_error "Running command '${cmd_prog} ${cmd_args[*]}' has failed"
-    fi
-}
-# }}}
-
-# {{{ encryption()
-encryption() {
-    log_debug "Encrypting using public key ${ENCRYPTION_PUBLIC_KEY}"
-    gpg --homedir "${GPG_HOMEDIR}" --encrypt --passphrase-file /dev/null --recipient-file "${ENCRYPTION_PUBLIC_KEY}" 2> >(logger "err" "error")
-}
-# }}}
-
-# {{{ compression()
-compression () {
-    if [ -n "${COMP_OPTS}" ]; then
-        IFS=" " read -r -a comp_args <<< "${COMP_OPTS}"
-        log_debug "Compressing using '${COMP} ${comp_args[*]}'"
-        "${COMP}" "${comp_args[@]}" 2> >(logger "err" "error")
-    else
-        log_debug "Compressing using '${COMP}'"
-        "${COMP}" 2> >(logger "err" "error")
     fi
 }
 # }}}
@@ -429,16 +439,16 @@ dump() {
 
     if [ -n "${COMP}" ] && [ "${ENCRYPTION}" = "yes" ]; then
         log_debug "Dumping (${db_name}) +compress +encrypt to '${dump_file}'"
-        dbdump "${db_name}" | compression | encryption > "${dump_file}"
+        pgdb_dump "${db_name}" | compression | encryption > "${dump_file}"
     elif [ -n "${COMP}" ]; then
         log_debug "Dumping (${db_name}) +compress to '${dump_file}'"
-        dbdump "${db_name}" | compression > "${dump_file}"
+        pgdb_dump "${db_name}" | compression > "${dump_file}"
     elif [ "${ENCRYPTION}" = "yes" ]; then
         log_debug "Dumping (${db_name}) +encrypt to '${dump_file}'"
-        dbdump "${db_name}" | encryption > "${dump_file}"
+        pgdb_dump "${db_name}" | encryption > "${dump_file}"
     else
         log_debug "Dumping (${db_name}) to '${dump_file}'"
-        dbdump "${db_name}" > "${dump_file}"
+        pgdb_dump "${db_name}" > "${dump_file}"
     fi
 
     if [ -f "${dump_file}" ]; then
@@ -587,8 +597,10 @@ fi
 
 # If backing up all DBs on the server
 if [ "${DBNAMES}" = "all" ]; then
-    DBNAMES="$(dblist)"
+    DBNAMES="$(pgdb_list)"
 fi
+
+pgdb_init
 
 for db in ${DBNAMES} ; do
     db="${db//%/ / }"
@@ -644,7 +656,7 @@ if [ "${DEBUG}" = "no" ] && grep -q '^err|' "${LOG_FILE}" ; then
             fi
         done
         printf "\nFor more information, try to run %s in debug mode, see \`%s -h\`\n" "${NAME}" "$(basename "$0")"
-    ) | mail -s "${NAME} issues on $(hostname --fqdn)" "${MAILADDR}"
+    ) | mail -s "${NAME} issues on ${HOSTNAME}" "${MAILADDR}"
 fi
 # }}}
 
