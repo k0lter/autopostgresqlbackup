@@ -161,7 +161,7 @@ DNOW="$(date '+%u')"                # Day number of the week 1 to 7 where 1 repr
 DNOM="$(date '+%d')"                # Date of the Month e.g. 27
 LOG_DIR="${BACKUPDIR}"              # Directory where the main log is saved
 # Fix day of month (left padding with 0)
-DOMONTHLY="$(echo "${DOMONTHLY}" | sed -r 's/^[0-9]$/0\0/')"
+DOMONTHLY="$(printf '%.2i' "${DOMONTHLY}")"
 
 # Using a shared memory filesystem (if available) to avoid
 # issues when there is no left space on backup storage
@@ -332,7 +332,7 @@ pgdb_list () {
 
     read -r -a dblist <<< "$(
         printf "%s" "${raw_dblist}" | \
-            sed -r -n 's/^([^:]+):.+$/\1/p' | \
+            sed -E -n 's/^([^:]+):.+$/\1/p' | \
             tr '\n' ' '
     )"
     log_debug "Automatically found databases: ${dblist[*]}"
@@ -482,9 +482,9 @@ cleanup() {
     log_info "Rotating ${count} ${when} backups..."
     log_debug "Looking for '${db}_*' in '${dumpdir}/${when}/${db}'"
     find "${dumpdir}/${when}/${db}/" -name "${db}_*" | \
-        sed -r 's/^.+([0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}h[0-9]{2}m).*$/\1 \0/' | \
+        sed -E 's/(^.+([0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}h[0-9]{2}m).*$)/\2 \1/' | \
         sort -r | \
-        sed -r -n 's/\S+ //p' | \
+        sed -E -n 's/\S+ //p' | \
         tail -n "+${count}" | \
         xargs -L1 rm -fv | \
         while IFS= read -r line ; do
@@ -576,8 +576,8 @@ if [ "${ENCRYPTION}" = "yes" ]; then
                 log_warn "Encryption using openssl is no longer supported: see ${HOMEPAGE}#openssl-encryption"
             fi
         else
-            keyfp="$(echo "${keyinfo}" | sed -r -n 's/^\s*([a-z0-9]+)\s*$/\1/pi')"
-            keyuid="$(echo "${keyinfo}" | sed -r -n 's/^\s*uid\s+(\S.*)$/\1/pi' | head -n1)"
+            keyfp="$(echo "${keyinfo}" | sed -E -n 's/^\s*([a-z0-9]+)\s*$/\1/pi')"
+            keyuid="$(echo "${keyinfo}" | sed -E -n 's/^\s*uid\s+(\S.*)$/\1/pi' | head -n1)"
             log_info "Encryption public key is: 0x${keyfp} (${keyuid})"
         fi
     fi
