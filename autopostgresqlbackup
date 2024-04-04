@@ -643,7 +643,13 @@ exec 2>&7 7>&-      # Restore stdout and close file descriptor #7.
 # }}}
 
 # {{{ Reporting
-if [ "${DEBUG}" = "no" ] && grep -q '^err|' "${LOG_FILE}" ; then
+if grep -q '^err|' "${LOG_FILE}"; then
+    rc=1
+else
+    rc=0
+fi
+
+if [ "${DEBUG}" = "no" ] && [ ${rc} = 1 ] && [ -n "${MAILADDR}" ]; then
     (
         printf "*Errors/Warnings* (below) reported during backup on *%s*:\n\n" "${HOST}"
         grep '^err|' "${LOG_FILE}" | cut -d '|' -f 3- | \
@@ -665,12 +671,6 @@ fi
 # }}}
 
 # {{{ Cleanup and exit()
-if [ -s "${LOGERR}" ]; then
-    rc=1
-else
-    rc=0
-fi
-
 # Cleanup GnuPG home dir
 if [ -d "${GPG_HOMEDIR}" ]; then
     rm -rf "${GPG_HOMEDIR}"
