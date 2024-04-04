@@ -4,7 +4,7 @@
 
 ### `MAILADDR`
 
-Email Address to send errors to
+Email Address to send errors to. If empty errors are displayed on stdout.
 
 **default**: `root`
 

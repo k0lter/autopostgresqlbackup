@@ -24,7 +24,7 @@
 
 # {{{ Variables
 
-# Email Address to send errors to
+# Email Address to send errors to. If empty errors are displayed on stdout.
 MAILADDR="root"
 
 # By default, on Debian systems (and maybe others), only postgres user is
@@ -172,7 +172,9 @@ if [ -w "/dev/shm" ]; then
     LOG_DIR="/dev/shm"
 fi
 
-LOG_FILE="${LOG_DIR}/${NAME}_${DBHOST//\//_}-$(date '+%Y-%m-%d_%Hh%Mm').log"
+LOG_PREFIX="${LOG_DIR}/${NAME}_${DBHOST//\//_}-$(date '+%Y-%m-%d_%Hh%Mm')"
+LOG_FILE="${LOG_PREFIX}.log"
+LOG_REPORT="${LOG_PREFIX}.report"
 
 # Debug mode
 DEBUG="no"
@@ -649,7 +651,7 @@ else
     rc=0
 fi
 
-if [ "${DEBUG}" = "no" ] && [ ${rc} = 1 ] && [ -n "${MAILADDR}" ]; then
+if [ "${DEBUG}" = "no" ] && [ ${rc} = 1 ]; then
     (
         printf "*Errors/Warnings* (below) reported during backup on *%s*:\n\n" "${HOST}"
         grep '^err|' "${LOG_FILE}" | cut -d '|' -f 3- | \
@@ -666,7 +668,13 @@ if [ "${DEBUG}" = "no" ] && [ ${rc} = 1 ] && [ -n "${MAILADDR}" ]; then
             fi
         done
         printf "\nFor more information, try to run %s in debug mode, see \`%s -h\`\n" "${NAME}" "$(basename "$0")"
-    ) | mail -s "${NAME} issues on ${HOSTNAME}" "${MAILADDR}"
+    ) > "${LOG_REPORT}"
+
+    if [ -n "${MAILADDR}" ]; then
+        mail -s "${NAME} issues on ${HOSTNAME}" "${MAILADDR}" < "${LOG_REPORT}"
+    else
+        cat "${LOG_REPORT}"
+    fi
 fi
 # }}}
 
@@ -677,7 +685,7 @@ if [ -d "${GPG_HOMEDIR}" ]; then
 fi
 
 # Clean up log files
-rm -f "${LOG_FILE}"
+rm -f "${LOG_FILE}" "${LOG_REPORT}"
 
 exit ${rc}
 # }}}
