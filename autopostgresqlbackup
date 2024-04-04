@@ -49,10 +49,13 @@ USERNAME="postgres"
 # replace hostname with the value of ${DBHOST}, dbuser with the value of
 # ${USERNAME} and dbpass with the password.
 
-# Host name (or IP address) of PostgreSQL server
+# Host name (or IP address) of PostgreSQL server.
+# Use 'localhost' for socket connection or '127.0.0.1' to force TCP connection
 DBHOST="localhost"
 
-# Port of PostgreSQL server (only used if ${DBHOST} != localhost).
+# Port of PostgreSQL server.
+# It is also used if ${DBHOST} is localhost (socket connection) as socket name
+# contains port
 DBPORT="5432"
 
 # List of database(s) names(s) to backup If you would like to backup all
@@ -200,9 +203,9 @@ if [[ "${HOSTNAME}" != *.* ]]; then
     HOSTNAME="$(hostname --fqdn)"
 fi
 
-HOST="${HOSTNAME}"
-if [ "${DBHOST}" != "localhost" ]; then
-    HOST="${HOSTNAME}:${DBPORT}"
+HOST="${DBHOST}:${DBPORT}"
+if [ "${DBHOST}" = "localhost" ]; then
+    HOST="${HOSTNAME}:${DBPORT} (socket)"
 fi
 
 CONN_ARGS=()
@@ -299,8 +302,9 @@ compression () {
 
 # {{{ pgdb_init()
 pgdb_init () {
+    CONN_ARGS=(--port "${DBPORT}")
     if [ "${DBHOST}" != "localhost" ]; then
-        CONN_ARGS=(--host "${DBHOST}" --port "${DBPORT}")
+        CONN_ARGS+=(--host "${DBHOST}")
     fi
     if [ -n "${USERNAME}" ]; then
         CONN_ARGS+=(--username "${USERNAME}")

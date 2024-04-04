@@ -26,13 +26,13 @@ Username to access the PostgreSQL server
 
 ### `DBHOST`
 
-Host name (or IP address) of PostgreSQL server
+Host name (or IP address) of PostgreSQL server. Use `localhost` for socket connection or `127.0.0.1` to force TCP connection.
 
 **default**: `localhost`
 
 ### `DBPORT`
 
-Port of PostgreSQL server (only used if `${DBHOST} != localhost`).
+Port of PostgreSQL server. It is also used if `${DBHOST}` is `localhost` (socket connection) as socket name contains port.
 
 **default**: `5432`
 
