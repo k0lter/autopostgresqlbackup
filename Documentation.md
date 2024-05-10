@@ -1,5 +1,17 @@
 # Documentation
 
+## Command line arguments
+
+| Argument | Description                                      |
+|----------|--------------------------------------------------|
+| -h       | Shows help                                       |
+| -d       | Run in debug mode (no mail sent)                 |
+| -c       | Configuration file or directory                  |
+|          |   (default is /etc/default/autopostgresqlbackup  |
+|          |    for backward compatibility)                   |
+
+About `-c` argument, if the value is a directory, all `*.conf` files present in this directory are processed. It allows one to backup more than one database.
+
 ## Configuration settings
 
 ### `MAILADDR`

@@ -22,7 +22,20 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 # }}}
 
+# {{{ Constants
+PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/postgres/bin:/usr/local/pgsql/bin
+HOMEPAGE="https://github.com/k0lter/autopostgresqlbackup"
+NAME="AutoPostgreSQLBackup"         # Script name
+VERSION="2.0"                       # Version Number
+DATE="$(date '+%Y-%m-%d_%Hh%Mm')"   # Datestamp e.g 2002-09-21
+DNOW="$(date '+%u')"                # Day number of the week 1 to 7 where 1 represents Monday
+DNOM="$(date '+%d')"                # Date of the Month e.g. 27
+# }}}
+
 # {{{ Variables
+
+# Configuration file or directory
+CONFIG="/etc/default/autopostgresqlbackup"
 
 # Email Address to send errors to. If empty errors are displayed on stdout.
 MAILADDR="root"
@@ -145,36 +158,6 @@ PREBACKUP=
 
 # Command or script to execute after backups
 POSTBACKUP=
-# }}}
-
-# {{{ OS Specific
-if [ -f /etc/default/autopostgresqlbackup ]; then
-    # shellcheck source=/dev/null
-    . /etc/default/autopostgresqlbackup
-fi
-# }}}
-
-# {{{ Defaults
-PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/postgres/bin:/usr/local/pgsql/bin
-HOMEPAGE="https://github.com/k0lter/autopostgresqlbackup"
-NAME="AutoPostgreSQLBackup"         # Script name
-VERSION="2.0"                       # Version Number
-DATE="$(date '+%Y-%m-%d_%Hh%Mm')"   # Datestamp e.g 2002-09-21
-DNOW="$(date '+%u')"                # Day number of the week 1 to 7 where 1 represents Monday
-DNOM="$(date '+%d')"                # Date of the Month e.g. 27
-LOG_DIR="${BACKUPDIR}"              # Directory where the main log is saved
-# Fix day of month (left padding with 0)
-DOMONTHLY="$(printf '%.2i' "${DOMONTHLY}")"
-
-# Using a shared memory filesystem (if available) to avoid
-# issues when there is no left space on backup storage
-if [ -w "/dev/shm" ]; then
-    LOG_DIR="/dev/shm"
-fi
-
-LOG_PREFIX="${LOG_DIR}/${NAME}_${DBHOST//\//_}-$(date '+%Y-%m-%d_%Hh%Mm')"
-LOG_FILE="${LOG_PREFIX}.log"
-LOG_REPORT="${LOG_PREFIX}.report"
 
 # Debug mode
 DEBUG="no"
@@ -182,22 +165,8 @@ DEBUG="no"
 # Encryption prerequisites
 GPG_HOMEDIR=
 
-# Create required directories
-if [ ! -e "${BACKUPDIR}" ]; then         # Check Backup Directory exists.
-    mkdir -p "${BACKUPDIR}"
-fi
-
-if [ ! -e "${BACKUPDIR}/daily" ]; then   # Check Daily Directory exists.
-    mkdir -p "${BACKUPDIR}/daily"
-fi
-
-if [ ! -e "${BACKUPDIR}/weekly" ]; then  # Check Weekly Directory exists.
-    mkdir -p "${BACKUPDIR}/weekly"
-fi
-
-if [ ! -e "${BACKUPDIR}/monthly" ]; then # Check Monthly Directory exists.
-    mkdir -p "${BACKUPDIR}/monthly"
-fi
+# Database connection arguments
+CONN_ARGS=()
 
 # Hostname
 HOSTNAME="$(uname -n)"
@@ -205,12 +174,8 @@ if [[ "${HOSTNAME}" != *.* ]]; then
     HOSTNAME="$(hostname --fqdn)"
 fi
 
-HOST="${DBHOST}:${DBPORT}"
-if [ "${DBHOST}" = "localhost" ]; then
-    HOST="${HOSTNAME}:${DBPORT} (socket)"
-fi
-
-CONN_ARGS=()
+# Return Code
+RC=0
 # }}}
 
 # {{{ log{,ger,_info,_debug,_warn,_error}()
@@ -472,6 +437,43 @@ dump() {
 }
 # }}}
 
+# {{{ setup()
+setup() {
+    # Using a shared memory filesystem (if available) to avoid
+    # issues when there is no left space on backup storage
+    if [ -w "/dev/shm" ]; then
+        LOG_DIR="/dev/shm"
+    fi
+
+    LOG_PREFIX="${LOG_DIR}/${NAME}_${DBHOST//\//_}-$(date '+%Y-%m-%d_%Hh%Mm')"
+    LOG_FILE="${LOG_PREFIX}.log"
+    LOG_REPORT="${LOG_PREFIX}.report"
+
+    # Create required directories
+    if [ ! -e "${BACKUPDIR}" ]; then         # Check Backup Directory exists.
+        mkdir -p "${BACKUPDIR}"
+    fi
+
+    if [ ! -e "${BACKUPDIR}/daily" ]; then   # Check Daily Directory exists.
+        mkdir -p "${BACKUPDIR}/daily"
+    fi
+
+    if [ ! -e "${BACKUPDIR}/weekly" ]; then  # Check Weekly Directory exists.
+        mkdir -p "${BACKUPDIR}/weekly"
+    fi
+
+    if [ ! -e "${BACKUPDIR}/monthly" ]; then # Check Monthly Directory exists.
+        mkdir -p "${BACKUPDIR}/monthly"
+    fi
+
+    HOST="${DBHOST}:${DBPORT}"
+    if [ "${DBHOST}" = "localhost" ]; then
+        HOST="${HOSTNAME}:${DBPORT} (socket)"
+    fi
+
+}
+# }}}
+
 # {{{ cleanup()
 cleanup() {
     local dumpdir db when count line
@@ -499,6 +501,36 @@ cleanup() {
 }
 # }}}
 
+# {{{ setup_io()
+setup_io() {
+    exec 6>&1           # Link file descriptor #6 with stdout.
+                        # Saves stdout.
+    exec 7>&2           # Link file descriptor #7 with stderr.
+                        # Saves stderr.
+    exec >  >( logger "out")
+    exec 2> >( logger "err")
+}
+# }}}
+
+#  {{{ cleanup_io()
+cleanup_io() {
+    exec 1>&6 6>&-      # Restore stdout and close file descriptor #6.
+    exec 2>&7 7>&-      # Restore stdout and close file descriptor #7.
+}
+# }}} 
+
+#  {{{ cleanup()
+cleanup() {
+    # Cleanup GnuPG home dir
+    if [ -d "${GPG_HOMEDIR}" ]; then
+        rm -rf "${GPG_HOMEDIR}"
+    fi
+
+    # Clean up log files
+    rm -f "${LOG_FILE}" "${LOG_REPORT}"
+}
+# }}}
+
 # {{{ usage()
 usage() {
 cat <<EOH
@@ -511,13 +543,13 @@ A fully automated tool to make periodic backups of PostgreSQL databases.
 Options:
     -h  Shows this help
     -d  Run in debug mode (no mail sent)
+    -c  Configuration file or directory (default: ${CONFIG})
 EOH
 }
 # }}}
 
 # {{{ Process command line arguments
-
-while getopts "hd" OPTION ; do
+while getopts "hdc:" OPTION ; do
     case "${OPTION}" in
         h)
             usage
@@ -526,20 +558,50 @@ while getopts "hd" OPTION ; do
         d)
             DEBUG="yes"
             ;;
+        c)
+            CONFIG="${OPTARG}"
+            ;;
         *)
-            printf "Try \`%s -h\` to check the command line arguments\n" "$(basename "$0")" >&2
+            printf "Try \`%s -h\` to check the command line arguments\n" "${NAME}" >&2
             exit 1
     esac
 done
 # }}}
 
 # {{{ I/O redirection(s) for logging
-exec 6>&1           # Link file descriptor #6 with stdout.
-                    # Saves stdout.
-exec 7>&2           # Link file descriptor #7 with stderr.
-                    # Saves stderr.
-exec >  >( logger "out")
-exec 2> >( logger "err")
+setup_io
+# }}}
+
+# {{{ Setup runtime settings
+setup
+# }}}
+
+# {{{ Config file loading
+if [ -d "${CONFIG}" ]; then
+    CMD="$(readlink -f "${0}")"
+    CMD_ARGS=()
+
+    if [ "${DEBUG}" = "yes" ]; then
+        CMD_ARGS+=(-d)
+    fi
+
+    cleanup_io
+    cleanup
+
+    find "${CONFIG}" -type f -iname '*.conf' -print0 | \
+        xargs -0 -L1 "${CMD}" "${CMD_ARGS[@]}" -c
+    exit $?
+elif [ -f "${CONFIG}" ]; then
+    log_debug "Loading config '${CONFIG}'"
+    # shellcheck source=/dev/null
+    . "${CONFIG}"
+    setup
+else
+    log_error "${NAME}: config file or directory '${CONFIG}' not found"
+    cleanup_io
+    cleanup
+    exit 1
+fi
 # }}}
 
 # {{{ PreBackup
@@ -640,18 +702,15 @@ fi
 # }}}
 
 # {{{ cleanup I/O redirections
-exec 1>&6 6>&-      # Restore stdout and close file descriptor #6.
-exec 2>&7 7>&-      # Restore stdout and close file descriptor #7.
+cleanup_io
 # }}}
 
 # {{{ Reporting
 if grep -q '^err|' "${LOG_FILE}"; then
-    rc=1
-else
-    rc=0
+    RC=1
 fi
 
-if [ "${DEBUG}" = "no" ] && [ ${rc} = 1 ]; then
+if [ "${DEBUG}" = "no" ] && [ ${RC} = 1 ]; then
     (
         printf "*Errors/Warnings* (below) reported during backup on *%s*:\n\n" "${HOST}"
         grep '^err|' "${LOG_FILE}" | cut -d '|' -f 3- | \
@@ -679,15 +738,9 @@ fi
 # }}}
 
 # {{{ Cleanup and exit()
-# Cleanup GnuPG home dir
-if [ -d "${GPG_HOMEDIR}" ]; then
-    rm -rf "${GPG_HOMEDIR}"
-fi
+cleanup
 
-# Clean up log files
-rm -f "${LOG_FILE}" "${LOG_REPORT}"
-
-exit ${rc}
+exit ${RC}
 # }}}
 
 # vim: foldmethod=marker foldlevel=0 foldenable
