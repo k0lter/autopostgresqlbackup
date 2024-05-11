@@ -2,9 +2,13 @@
 
 ## Version 2.1
 
+* Add support for MySQL (using the `DBENGINE` configuration parameter).
+* Add a command line option `-c` to specify an alternate config file or directory (see [Documentation](/Documentation.md)).
+* Add manpage
 * Variable `OPT` (used with pg_dump) is renamed to `PGDUMP_OPTS` and a new variable `PGDUMPALL_OPTS` is available (used for dump globals with pg_dumpall) (Closes: [#12](https://github.com/k0lter/autopostgresqlbackup/issues/12))
 * Fix stderr capture and check return code while running pg_dump/pg_dumpall commands
 * Add `MIN_DUMP_SIZE` configuration variable to raise a warning when a backup file size is below this limit (Closes: [#15](https://github.com/k0lter/autopostgresqlbackup/issues/15))
+* Various bug fixes
 
 ## Version 2.0
 
