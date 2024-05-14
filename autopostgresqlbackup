@@ -313,7 +313,7 @@ postgresqldb_list () {
     )
 
     read -r -a dblist <<< "$(
-        printf "%s" "${raw_dblist}" | \
+        printf "%s\n" "${raw_dblist}" | \
             sed -E -n 's/^([^:]+):.+$/\1/p' | \
             arg_encode | \
             tr '\n' ' '
@@ -435,7 +435,7 @@ mysqldb_list () {
     )
 
     read -r -a dblist <<< "$(
-        printf "%s" "${raw_dblist}" | \
+        printf "%s\n" "${raw_dblist}" | \
             arg_encode | \
             tr '\n' ' '
     )"
