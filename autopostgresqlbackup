@@ -640,8 +640,8 @@ setup() {
 }
 # }}}
 
-# {{{ cleanup()
-cleanup() {
+# {{{ cleanup_backup()
+cleanup_backup() {
     local dumpdir db when count line
 
     dumpdir="${1}"
@@ -847,7 +847,8 @@ for db_enc in ${DBNAMES} ; do
         mkdir -p "${backupdbdir}"
     fi
 
-    cleanup "${BACKUPDIR}" "${db_enc}" "${period}" "${rotate}"
+    cleanup_backup "${BACKUPDIR}" "${db_enc}" "${period}" "${rotate}"
+    cleanup
 
     backupfile="${backupdbdir}/${db_enc}_${DATE}.${EXT}"
     dump "${db}" "${backupfile}"
