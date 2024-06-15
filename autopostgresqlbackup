@@ -93,7 +93,13 @@ COMP="gzip"
 # Compression tools options.
 COMP_OPTS=
 
-# Options string for use with pg_dump (see pg_dump manual page).
+# pg_dump path (pg_dump will be used if empty)
+PGDUMP=
+
+# pg_dumpall path (pg_dumpall will be used if empty)
+PGDUMPALL=
+
+# Options string for use with all_dump (see pg_dump manual page).
 PGDUMP_OPTS=
 
 # Options string for use with pg_dumpall (see pg_dumpall manual page).
@@ -287,6 +293,12 @@ postgresqldb_init () {
         USERNAME="postgres"
     fi
     CONN_ARGS+=(--username "${USERNAME}")
+    if [ -z "${PGDUMP}" ]; then
+        PGDUMP="pg_dump"
+    fi
+    if [ -z "${PGDUMPALL}" ]; then
+        PGDUMPALL="pg_dumpall"
+    fi
 }
 # }}}
 
@@ -360,11 +372,11 @@ postgresqldb_dump () {
     fi
 
     if [ "${db_name}" = "${GLOBALS_OBJECTS}" ]; then
-        cmd_prog="pg_dumpall"
+        cmd_prog="${PGDUMPALL}"
         cmd_args=(--globals-only)
         pg_args=("${PGDUMPALL_ARGS[@]}")
     else
-        cmd_prog="pg_dump"
+        cmd_prog="${PGDUMP}"
         if [ -n "${SU_USERNAME}" ]; then
             cmd_args=("'${db_name}'")
         else

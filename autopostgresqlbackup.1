@@ -1,0 +1,246 @@
+.\" generated with Ronn-NG/v0.9.1
+.\" http://github.com/apjanke/ronn-ng/tree/0.9.1
+.TH "AUTOPOSTGRESQLBACKUP" "1" "June 2024" "" "autopostgresqlbackup"
+.SH "NAME"
+autopostgresqlbackup \-\- Automated tool to make periodic backups of databases
+.SH "SYNOPSIS"
+\fBautopostgresqlbackup [OPTIONS]\fR
+.SH "DESCRIPTION"
+AutoPostgreSQLBackup is a shell script (usually executed from a cron job or a systemd timer) designed to provide a fully automated tool to make periodic backups of databases\.
+.P
+AutoPostgreSQLBackup extract databases into flat files (compressed or not, encrypted or not) in a daily and/or weekly and/or monthly basis\.
+.P
+AutoPostgreSQLBackup supports mutliple databases engines (PostgreSQL and MySQL by now)\.
+.SH "OPTIONS"
+\fB\-h\fR displays command line help
+.P
+\fB\-d\fR Run in debug mode (no mail sent)
+.P
+\fB\-c\fR Configuration file or directory (default: \fB/etc/default/autopostgresqlbackup\fR)
+.P
+When a directory is used, the \fB*\.conf\fR files will be processed sequentially\. It allows one to backup multiple databases servers with distinct settings :
+.IP "\[ci]" 4
+database servers with distinct engines
+.IP "\[ci]" 4
+PostgreSQL cluster with instances running on multiple ports
+.IP "" 0
+.SH "ENCRYPTION"
+Encryption (asymmetric) is now done with GnuPG, you just need to add the public key (armored or not) you want to encrypt the data to in the file pointed by the \fBENCRYPTION_PUBLIC_KEY\fR configuration setting\.
+.P
+Export your public key:
+.P
+\fBgpg \-\-export 0xY0URK3Y1D \-\-output mypubkey\.gpg\fR
+.P
+or
+.P
+\fBgpg \-\-export \-\-armor 0xY0URK3Y1D \-\-output mypubkey\.asc\fR
+.P
+then copy mypubkey\.asc or mypubkey\.gpg to the path pointed by the \fBENCRYPTION_PUBLIC_KEY\fR configuration setting and set the \fBENCRYPTION\fR setting to yes\.
+.SH "DECRYPTION"
+In order to decrypt a previously encrypted database dump:
+.P
+\fBgpg \-\-decrypt \-\-output backup\.sql\.gz backup\.sql\.gz\.enc\fR
+.SH "OPENSSL ENCRYPTION"
+Starting from version 2\.0 encryption with OpenSSL is no longer supported as it was discovered[1] (but also known for quite some time[2]) that encrypting large files with OpenSSL silently fail[3] and that decrypting these files is close to be impossible[4]\.
+.IP "\[ci]" 4
+[1] https://github\.com/k0lter/autopostgresqlbackup/issues/10
+.IP "\[ci]" 4
+[2] https://github\.com/cytopia/mysqldump\-secure/issues/21
+.IP "\[ci]" 4
+[3] https://github\.com/openssl/openssl/issues/2515
+.IP "\[ci]" 4
+[4]\~https://github\.com/imreFitos/large_smime_decrypt
+.IP "" 0
+.SH "CONFIGURATION"
+.SS "MAILADDR"
+Email Address to send errors to\. If empty errors are displayed on stdout\.
+.P
+\fBdefault\fR: \fBroot\fR
+.SS "DBENGINE"
+Database engine
+.P
+\fBdefault\fR: \fBpostgresql\fR
+.P
+\fIsupported values\fR: \fBpostgresql\fR or \fBmysql\fR
+.SS "USERNAME"
+Username to access the database server
+.P
+\fBdefault\fR: \fB""\fR (empty, the username to use is automatically defined depending on \fBDBENGINE\fR: \fBpostgres\fR for PostgreSQL and \fBroot\fR for MySQL)
+.SS "SU_USERNAME"
+By default, on Debian systems (and maybe others), only \fBpostgres\fR user is allowed to access PostgreSQL databases without password\.
+.P
+In order to dump databases we need to run pg_dump/psql commands as \fBpostgres\fR with su\.
+.P
+This setting makes possible to run backups with a substitute user using \fBsu\fR\. If empty, \fBsu\fR usage will be disabled)
+.P
+\fBdefault\fR: \fB""\fR (empty, not used)
+.P
+\fIOnly while using PostgreSQL database engine\fR
+.SS "PASSWORD"
+Password to access then Database server
+.P
+While using PostgreSQL database engine, in order to use a password to connect to database create a file \fB~/\.pgpass\fR containing a line like this:
+.P
+\fBhostname:*:*:dbuser:dbpass\fR
+.P
+replace \fBhostname\fR with the value of \fBDBHOST\fR, \fBdbuser\fR with the value of \fBUSERNAME\fR and \fBdbpass\fR with the password\.
+.P
+While using MySQL database engine, if password is not set mysqldump will try to read credentials from \fB~/\.my\.cnf\fR if file exists\.
+.P
+\fBdefault\fR: \fB""\fR (empty)
+.SS "DBHOST"
+Host name (or IP address) of database server\. Use \fBlocalhost\fR for socket connection or \fB127\.0\.0\.1\fR to force TCP connection\.
+.P
+\fBdefault\fR: \fBlocalhost\fR
+.SS "DBPORT"
+Port of database server\.
+.P
+While using PostgreSQL database engine, it is also used if \fBDBHOST\fR is \fBlocalhost\fR (socket connection) as socket name contains port\.
+.P
+\fBdefault\fR: \fB""\fR (empty, the port to use is automatically defined depending on \fBDBENGINE\fR: \fB5432\fR for PostgreSQL and \fB3306\fR for MySQL)
+.SS "DBNAMES"
+Explicit list of database(s) names(s) to backup
+.P
+If you would like to backup all databases on the server set \fBDBNAMES="all"\fR\. If set to \fB"all"\fR then any new databases will automatically be backed up without needing to modify this settings when a new database is created\.
+.P
+If the database you want to backup has a space in the name replace the space by a \fB%20\fR (\fB"data base"\fR will become \fB"data%20base"\fR)\.
+.P
+\fBdefault\fR: \fBall\fR
+.P
+\fBexample\fR: \fB"users pages user%20data"\fR
+.SS "DBEXCLUDE"
+List of databases to exclude if \fBDBNAMES\fR is not set to \fBall\fR\.
+.P
+\fBdefault\fR : \fB""\fR (empty)
+.P
+\fBexample\fR: \fB"pages user%20data"\fR
+.SS "GLOBALS_OBJECTS"
+Virtual database name used to backup global objects (users, roles, tablespaces)\.
+.P
+\fBdefault\fR: \fBpostgres_globals\fR
+.P
+\fIOnly while using PostgreSQL database engine\fR
+.SS "BACKUPDIR"
+Backup directory
+.P
+\fBdefault\fR: \fB/var/backups\fR
+.SS "CREATE_DATABASE"
+Include or not \fBCREATE DATABASE\fR statments in dabatbases backups\.
+.P
+\fBdefault\fR: \fByes\fR
+.P
+\fIsupported values\fR: \fByes\fR or \fBno\fR
+.SS "DOWEEKLY"
+Which day do you want weekly backups? (1 to 7 where 1 is Monday)\.
+.P
+When set to 0, weekly backups are disabled\.
+.P
+\fBdefault\fR: \fB7\fR (Sunday)
+.SS "DOMONTHLY"
+Which day do you want monthly backups?
+.P
+When set to 0, monthly backups are disabled\.
+.P
+\fBdefault\fR: \fB1\fR (first day of the month)
+.SS "BRDAILY"
+Backup retention count for daily backups, older backups are removed\.
+.P
+\fBdefault\fR: \fB14\fR (14 days)
+.SS "BRWEEKLY"
+Backup retention count for weekly backups, older backups are removed\.
+.P
+\fBdefault\fR: \fB5\fR (5 weeks)
+.SS "BRMONTHLY"
+Backup retention count for monthly backups, older backups are removed\.
+.P
+\fBdefault\fR: \fB12\fR (12 months)
+.SS "COMP"
+Compression tool\. It could be gzip, pigz, bzip2, xz, zstd or any compression tool that supports to read data to be compressed from stdin and outputs them to stdout)\.
+.P
+If the tool is not in \fB${PATH}\fR, the absolute path can be used\.
+.P
+\fBdefault\fR: \fBgzip\fR
+.SS "COMP_OPTS"
+Compression tools options to be used with \fBCOMP\fR
+.P
+\fBdefault\fR: \fB""\fR (empty)
+.P
+\fBexample\fR: \fBCOMP="zstd" COMP_OPTS="\-f \-c"\fR
+.SS "PGDUMP"
+pg_dump path (relative if present in \fB${PATH}\fR or absolute)
+.P
+\fBdefault\fR: \fB""\fR (if empty \fBpg_dump\fR will be used)
+.P
+\fIOnly while using PostgreSQL database engine\fR
+.SS "PGDUMPALL"
+pg_dumpall path (relative if present in \fB${PATH}\fR or absolute)
+.P
+\fBdefault\fR: \fB""\fR (if empty \fBpg_dumpall\fR will be used)
+.P
+\fIOnly while using PostgreSQL database engine\fR
+.SS "PGDUMP_OPTS"
+Options string for use with pg_dump (see pg_dump \fIhttps://www\.postgresql\.org/docs/current/app\-pgdump\.html\fR manual page)\.
+.P
+\fBdefault\fR: \fB""\fR (empty)
+.P
+\fIOnly while using PostgreSQL database engine\fR
+.SS "PGDUMPALL_OPTS"
+Options string for use with pg_dumpall (see pg_dumpall \fIhttps://www\.postgresql\.org/docs/current/app\-pg\-dumpall\.html\fR manual page)\.
+.P
+\fBdefault\fR: \fB""\fR (empty)
+.P
+\fIOnly while using PostgreSQL database engine\fR
+.SS "MYDUMP_OPTS"
+Options string for use with mysqldump (see mysqldump \fIhttps://dev\.mysql\.com/doc/refman/8\.3/en/mysqldump\.html\fR manual page)\.
+.P
+\fBdefault\fR: \fB""\fR (empty)
+.P
+\fIOnly while using MySQL database engine\fR
+.SS "EXT"
+Backup files extension
+.P
+\fBdefault\fR: \fBsql\fR
+.SS "PERM"
+Backup files permission
+.P
+\fBdefault\fR: \fB600\fR
+.SS "MIN_DUMP_SIZE"
+Minimum size (in bytes) for a dump/file (compressed or not)\. File size below this limit will raise a warning\.
+.P
+\fBdefault\fR: \fB256\fR
+.SS "ENCRYPTION"
+Enable encryption (asymmetric) with GnuPG\.
+.P
+\fBdefault\fR: \fBno\fR
+.P
+\fIsupported values\fR: \fByes\fR or \fBno\fR
+.SS "ENCRYPTION_PUBLIC_KEY"
+Encryption public key (path to the key)
+.P
+\fBdefault\fR: \fB""\fR (empty)
+.SS "ENCRYPTION_SUFFIX"
+Suffix for encyrpted files
+.P
+\fBdefault\fR: \fB\.enc\fR
+.SS "PREBACKUP"
+Command or script to execute before backups
+.P
+\fBdefault\fR: \fB""\fR (empty, not used)
+.SS "POSTBACKUP"
+Command or script to execute after backups
+.P
+\fBdefault\fR: \fB""\fR (empty, not used)
+.SH "AUTHORS"
+Originally developped by Aaron Axelsen with Friedrich Lobenstock contributions\.
+.P
+Almost fully rewritten by Emmanuel Bouthenot (version 2\.0 and higher)\.
+.SH "LICENSE AND COPYRIGHT"
+This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version\.
+.P
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE\. See the GNU General Public License for more details\.
+.SH "CONTRIBUTIONS"
+Contributions are welcome on the project page: https://github\.com/k0lter/autopostgresqlbackup/pulls
+.SH "BUGS"
+Bug reports are welcome on the project page: https://github\.com/k0lter/autopostgresqlbackup/issues
+.SH "SEE ALSO"
+\fBpg_dump\fR(1), \fBpg_dumpall\fR(1), \fBmysqldump\fR(1) and the project page https://github\.com/k0lter/autopostgresqlbackup/

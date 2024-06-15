@@ -234,6 +234,22 @@ Compression tools options to be used with `COMP`
 
 **example**: `COMP="zstd" COMP_OPTS="-f -c"`
 
+### PGDUMP
+
+pg_dump path (relative if present in `${PATH}` or absolute)
+
+**default**: `""` (if empty `pg_dump` will be used)
+
+*Only while using PostgreSQL database engine*
+
+### PGDUMPALL
+
+pg_dumpall path (relative if present in `${PATH}` or absolute)
+
+**default**: `""` (if empty `pg_dumpall` will be used)
+
+*Only while using PostgreSQL database engine*
+
 ### PGDUMP_OPTS
 
 Options string for use with pg_dump (see
