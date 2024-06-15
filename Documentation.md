@@ -270,6 +270,22 @@ manual page).
 
 *Only while using PostgreSQL database engine*
 
+### MY
+
+mysql path (relative if present in `${PATH}` or absolute)
+
+**default**: `""` (if empty `mysql` will be used)
+
+*Only while using MySQL database engine*
+
+### MYDUMP
+
+mysqldump path (relative if present in `${PATH}` or absolute)
+
+**default**: `""` (if empty `mysqldump` will be used)
+
+*Only while using MySQL database engine*
+
 ### MYDUMP_OPTS
 
 Options string for use with mysqldump (see

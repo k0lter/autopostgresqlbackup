@@ -105,6 +105,12 @@ PGDUMP_OPTS=
 # Options string for use with pg_dumpall (see pg_dumpall manual page).
 PGDUMPALL_OPTS=
 
+# mysql path (mysql will be used if empty)
+MY=
+
+# mysqldump path (mysqldump will be used if empty)
+MYDUMP=
+
 # Options string for use with mysqldump (see myqldump manual page).
 MYDUMP_OPTS=
 
@@ -425,6 +431,12 @@ mysqldb_init () {
     if [ -n "${PASSWORD}" ]; then
         CONN_ARGS+=(--password "${PASSWORD}")
     fi
+    if [ -z "${MY}" ]; then
+        MY="mysql"
+    fi
+    if [ -z "${MYDUMP}" ]; then
+        MYDUMP="mysqldump"
+    fi
 }
 # }}}
 
@@ -432,7 +444,7 @@ mysqldb_init () {
 mysqldb_list () {
     local cmd_prog cmd_args raw_dblist dblist dbexcl databases
 
-    cmd_prog="mysql"
+    cmd_prog="${MY}"
     cmd_args=(--batch --skip-column-names --execute 'SHOW DATABASES;')
 
     if [ "${#CONN_ARGS[@]}" -gt 0 ]; then
@@ -484,7 +496,7 @@ mysqldb_dump () {
         MYDUMP_ARGS=()
     fi
 
-    cmd_prog="mysqldump"
+    cmd_prog="${MYDUMP}"
     cmd_args=("${db_name}")
     my_args=("${MYDUMP_ARGS[@]}")
     my_args+=(--quote-names --events --routines)
@@ -841,12 +853,12 @@ else
     rotate="${BRDAILY}"
 fi
 
+db_init
+
 # If backing up all DBs on the server
 if [ "${DBNAMES}" = "all" ]; then
     DBNAMES="$(db_list)"
 fi
-
-db_init
 
 for db_enc in ${DBNAMES} ; do
     db="$(echo "${db_enc}" | arg_decode)"
