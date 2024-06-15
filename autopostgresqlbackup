@@ -544,6 +544,33 @@ db_dump () {
 }
 # }}}
 
+# {{{ db_purge()
+db_purge() {
+    local dumpdir db when count line
+
+    dumpdir="${1}"
+    db="${2}"
+    when="${3}"
+    count="${4}"
+
+    # Since version >= 2.0 the dump filename no longer contains the week number
+    # or the abbreviated month name so in order to be sure to remove the older
+    # dumps we need to sort the filename on the datetime part (YYYY-MM-DD_HHhMMm)
+
+    log_info "Rotating ${count} ${when} backups..."
+    log_debug "Looking for '${db}_*' in '${dumpdir}/${when}/${db}'"
+    find "${dumpdir}/${when}/${db}/" -name "${db}_*" | \
+        sed -E 's/(^.+([0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}h[0-9]{2}m).*$)/\2 \1/' | \
+        sort -r | \
+        sed -E -n 's/\S+ //p' | \
+        tail -n "+${count}" | \
+        xargs -L1 rm -fv | \
+        while IFS= read -r line ; do
+            log_info "${line}"
+        done
+}
+# }}}
+
 # {{{ dump()
 dump() {
     local db_name dump_file comp_ext
@@ -640,30 +667,15 @@ setup() {
 }
 # }}}
 
-# {{{ cleanup()
+#  {{{ cleanup()
 cleanup() {
-    local dumpdir db when count line
+    # Cleanup GnuPG home dir
+    if [ -d "${GPG_HOMEDIR}" ]; then
+        rm -rf "${GPG_HOMEDIR}"
+    fi
 
-    dumpdir="${1}"
-    db="${2}"
-    when="${3}"
-    count="${4}"
-
-    # Since version >= 2.0 the dump filename no longer contains the week number
-    # or the abbreviated month name so in order to be sure to remove the older
-    # dumps we need to sort the filename on the datetime part (YYYY-MM-DD_HHhMMm)
-
-    log_info "Rotating ${count} ${when} backups..."
-    log_debug "Looking for '${db}_*' in '${dumpdir}/${when}/${db}'"
-    find "${dumpdir}/${when}/${db}/" -name "${db}_*" | \
-        sed -E 's/(^.+([0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}h[0-9]{2}m).*$)/\2 \1/' | \
-        sort -r | \
-        sed -E -n 's/\S+ //p' | \
-        tail -n "+${count}" | \
-        xargs -L1 rm -fv | \
-        while IFS= read -r line ; do
-            log_info "${line}"
-        done
+    # Clean up log files
+    rm -f "${LOG_FILE}" "${LOG_REPORT}"
 }
 # }}}
 
@@ -684,18 +696,6 @@ cleanup_io() {
     exec 2>&7 7>&-      # Restore stdout and close file descriptor #7.
 }
 # }}} 
-
-#  {{{ cleanup()
-cleanup() {
-    # Cleanup GnuPG home dir
-    if [ -d "${GPG_HOMEDIR}" ]; then
-        rm -rf "${GPG_HOMEDIR}"
-    fi
-
-    # Clean up log files
-    rm -f "${LOG_FILE}" "${LOG_REPORT}"
-}
-# }}}
 
 # {{{ usage()
 usage() {
@@ -847,7 +847,7 @@ for db_enc in ${DBNAMES} ; do
         mkdir -p "${backupdbdir}"
     fi
 
-    cleanup "${BACKUPDIR}" "${db_enc}" "${period}" "${rotate}"
+    db_purge "${BACKUPDIR}" "${db_enc}" "${period}" "${rotate}"
 
     backupfile="${backupdbdir}/${db_enc}_${DATE}.${EXT}"
     dump "${db}" "${backupfile}"
