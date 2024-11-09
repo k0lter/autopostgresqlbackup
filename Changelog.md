@@ -2,6 +2,7 @@
 
 ## Version 2.1
 
+* Default configuration file /etc/default/autopostgresqlbackup is now deprecated in favor of /etc/autodbbackup.d
 * Add support for MySQL/MariaDB (using the `DBENGINE` configuration parameter).
 * Add a command line option `-c` to specify an alternate config file or directory (see [Documentation](/Documentation.md)).
 * Add manpage

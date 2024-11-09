@@ -34,7 +34,10 @@ DNOM="$(date '+%d')"                # Date of the Month e.g. 27
 # {{{ Variables
 
 # Configuration file or directory
-CONFIG="/etc/default/autopostgresqlbackup"
+CONFIG="/etc/autodbbackup.d"
+
+# Legacy configuration file path (for backward compatibility)
+CONFIG_COMPAT="/etc/default/autopostgresqlbackup"
 
 # Email Address to send errors to. If empty errors are displayed on stdout.
 MAILADDR="root"
@@ -734,6 +737,9 @@ Options:
     -h  Shows this help
     -d  Run in debug mode (no mail sent)
     -c  Configuration file or directory (default: ${CONFIG})
+        Note: if ${CONFIG} file or directory does not exists
+        but ${CONFIG_COMPAT} exists, it will be used
+        for backward compatibility.
 EOH
 }
 # }}}
@@ -750,6 +756,7 @@ while getopts "hdc:" OPTION ; do
             ;;
         c)
             CONFIG="${OPTARG}"
+            CONFIG_COMPAT=
             ;;
         *)
             printf "Try \`%s -h\` to check the command line arguments\n" "${NAME}" >&2
@@ -767,7 +774,17 @@ setup
 # }}}
 
 # {{{ Config file loading
+CONFIG_N=0
 if [ -d "${CONFIG}" ]; then
+    CONFIG_N=$(find "${CONFIG}" -type f -iname '*.conf' | wc -l)
+fi
+
+if [ -f "${CONFIG_COMPAT}" ]; then
+    log_debug "Loading config '${CONFIG}' (for backward compatibility)"
+    # shellcheck source=/dev/null
+    . "${CONFIG_COMPAT}"
+    setup
+elif [ "${CONFIG_N}" -gt 0 ]; then
     CMD="$(readlink -f "${0}")"
     CMD_ARGS=()
 
@@ -787,7 +804,7 @@ elif [ -f "${CONFIG}" ]; then
     . "${CONFIG}"
     setup
 else
-    log_error "${NAME}: config file or directory '${CONFIG}' not found"
+    log_error "${NAME}: config file or directory '${CONFIG}' does not exists or directory '${CONFIG}' does not contains any configuration files."
     cleanup_io
     cleanup
     exit 1

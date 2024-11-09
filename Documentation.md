@@ -24,13 +24,17 @@ by now).
 
 `-d` Run in debug mode (no mail sent)
 
-`-c` Configuration file or directory (default: `/etc/default/autopostgresqlbackup`)
+`-c` Configuration file or directory (default: `/etc/autodbbackup.d/`)
 
   When a directory is used, the `*.conf` files will be processed sequentially.
   It allows one to backup multiple databases servers with distinct settings :
 
    - database servers with distinct engines
    - PostgreSQL cluster with instances running on multiple ports
+
+  Note: if no configuration file or directory is passed as argument but
+  `/etc/default/autopostgresqlbackup` exists, it will be used for backward
+  compatibility.
 
 ## ENCRYPTION
 
