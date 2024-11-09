@@ -2,7 +2,7 @@
 
 ## Version 2.1
 
-* Add support for MySQL (using the `DBENGINE` configuration parameter).
+* Add support for MySQL/MariaDB (using the `DBENGINE` configuration parameter).
 * Add a command line option `-c` to specify an alternate config file or directory (see [Documentation](/Documentation.md)).
 * Add manpage
 * Fix hypotetical shell injection by crafting special database names
