@@ -1,5 +1,15 @@
 # Changelog
 
+## Version 2.3
+
+* Add `REPORT_ERRORS_ONLY` (default: `yes`) configuration variable. Set it to `no` permits to receive a backup report even if there are no errors. (Closes: [#35](https://github.com/k0lter/autopostgresqlbackup/issues/35))
+* Add cron and systemd examples
+* Manpage is by now built from Documentation.md using pandoc
+
+## Version 2.2
+
+* Fix manpage issue
+
 ## Version 2.1
 
 * Default configuration file /etc/default/autopostgresqlbackup is now deprecated in favor of /etc/autodbbackup.d
