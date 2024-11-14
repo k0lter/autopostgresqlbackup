@@ -27,6 +27,12 @@ That's it!
 
 See [the documentation](/Documentation.md).
 
+## Manual page
+
+Man page is build from [the documentation](/Documentation.md) using pandoc using the Makefile.
+
+`make man`
+
 ## History
 
  * 2023: Almost full rewrite with better error handling and new features (see Changelog.md for details)
