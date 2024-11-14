@@ -1,8 +1,10 @@
 # AutoPostgreSQLBackup
 
-AutoPostgreSQLBackup is a shell script (usually executed from a cron job) designed to provide a fully automated tool to make periodic backups of PostgreSQL databases.
+AutoPostgreSQLBackup is a shell script (usually executed from a cron job) designed to provide a fully automated tool to make periodic backups of databases (supports PostgreSQL and MySQL/MariaDB).
 
 AutoPostgreSQLBackup extract databases into flat files in a daily, weekly or monthly basis.
+
+Version 2.2 adds support for MySQL/MariaDB.
 
 Version 2.0 is a full rewrite.
 

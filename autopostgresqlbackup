@@ -779,7 +779,7 @@ USAGE: $(basename "$0") [OPTIONS]
 
 ${NAME} ${VERSION}
 
-A fully automated tool to make periodic backups of PostgreSQL databases.
+A fully automated tool to make periodic backups databases (supports PostgreSQL and MySQL/MariaDB).
 
 Options:
     -h  Shows this help

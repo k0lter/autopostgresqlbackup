@@ -15,7 +15,7 @@ backups of databases.
 AutoPostgreSQLBackup extract databases into flat files (compressed or not,
 encrypted or not) in a daily and/or weekly and/or monthly basis.
 
-AutoPostgreSQLBackup supports mutliple databases engines (PostgreSQL and MySQL
+AutoPostgreSQLBackup supports multiple databases engines (PostgreSQL and MySQL
 by now).
 
 ## OPTIONS
@@ -186,7 +186,7 @@ Backup directory
 
 ### CREATE_DATABASE
 
-Include or not `CREATE DATABASE` statments in dabatbases backups.
+Include or not `CREATE DATABASE` statements in dabatbases backups.
 
 **default**: `yes`
 
@@ -359,7 +359,7 @@ Command or script to execute after backups
 
 ## AUTHORS
 
-Originally developped by Aaron Axelsen with Friedrich Lobenstock contributions.
+Originally developed by Aaron Axelsen with Friedrich Lobenstock contributions.
 
 Almost fully rewritten by Emmanuel Bouthenot (version 2.0 and higher).
 
