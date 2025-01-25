@@ -1,0 +1,11 @@
+[Unit]
+Description=autopostgresqlbackup daily service
+Documentation=man:autopostgresqlbackup(8)
+After=postgresql.target mysql.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/autopostgresqlbackup
+ProtectHome=true
+ProtectSystem=full
+PrivateTmp=true

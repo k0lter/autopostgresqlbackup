@@ -1,0 +1,15 @@
+#!/bin/sh
+#
+# autopostgresqlbackup daily cron task
+#
+
+if [ -d /run/systemd/system ]; then
+    # Skip in favour of systemd timer.
+    exit 0
+fi
+
+if [ -x /usr/sbin/autopostgresqlbackup ]; then
+	/usr/sbin/autopostgresqlbackup
+fi
+
+exit 0
