@@ -42,6 +42,9 @@ CONFIG_COMPAT="/etc/default/autopostgresqlbackup"
 # Email Address to send errors to. If empty errors are displayed on stdout.
 MAILADDR="root"
 
+# Send email only if there are errors
+REPORT_ERRORS_ONLY="yes"
+
 # Database engines supported: postgresql, mysql
 DBENGINE="postgresql"
 
@@ -722,7 +725,52 @@ cleanup_io() {
     exec 1>&6 6>&-      # Restore stdout and close file descriptor #6.
     exec 2>&7 7>&-      # Restore stdout and close file descriptor #7.
 }
-# }}} 
+# }}}
+
+# {{{ reporting()
+reporting() {
+    local exitcode subject
+
+    exitcode=0
+    if grep -q '^err|' "${LOG_FILE}"; then
+        exitcode=1
+    fi
+
+    if [[ ( "${DEBUG}" = "no" ) && ( ${exitcode} = 1 || "${REPORT_ERRORS_ONLY}" = "no" ) ]]; then
+        (
+            if [ ${exitcode} = 1 ]; then
+                printf "*Errors/Warnings* (below) reported during backup on *%s*:\n\n" "${HOST}"
+                grep '^err|' "${LOG_FILE}" | cut -d '|' -f 3- | \
+                while IFS= read -r line ; do
+                    printf "  | %s\n" "${line}"
+                done
+            fi
+            printf "\n\nFull backup log follows:\n\n"
+            grep -v '^...|debug|' "${LOG_FILE}" | \
+            while IFS="|" read -r fd level line ; do
+                if [ -n "${level}" ]; then
+                    printf "%8s| %s\n" "*${level}*" "${line}"
+                else
+                    printf "%8s| %s\n" "" "${line}"
+                fi
+            done
+            printf "\nFor more information, try to run %s in debug mode, see \`%s -h\`\n" "${NAME}" "$(basename "$0")"
+        ) > "${LOG_REPORT}"
+
+        if [ -n "${MAILADDR}" ]; then
+            subject="report"
+            if [ ${exitcode} = 1 ]; then
+                subject="issues"
+            fi
+            mail -s "${NAME} ${subject} on ${HOSTNAME}" "${MAILADDR}" < "${LOG_REPORT}"
+        else
+            cat "${LOG_REPORT}"
+        fi
+    fi
+
+    return ${exitcode}
+}
+# }}}
 
 # {{{ usage()
 usage() {
@@ -805,6 +853,7 @@ elif [ -f "${CONFIG}" ]; then
     setup
 else
     log_error "${NAME}: config file or directory '${CONFIG}' does not exists or directory '${CONFIG}' does not contains any configuration files."
+    reporting
     cleanup_io
     cleanup
     exit 1
@@ -914,35 +963,8 @@ cleanup_io
 # }}}
 
 # {{{ Reporting
-if grep -q '^err|' "${LOG_FILE}"; then
-    RC=1
-fi
-
-if [ "${DEBUG}" = "no" ] && [ ${RC} = 1 ]; then
-    (
-        printf "*Errors/Warnings* (below) reported during backup on *%s*:\n\n" "${HOST}"
-        grep '^err|' "${LOG_FILE}" | cut -d '|' -f 3- | \
-        while IFS= read -r line ; do
-            printf "  | %s\n" "${line}"
-        done
-        printf "\n\nFull backup log follows:\n\n"
-        grep -v '^...|debug|' "${LOG_FILE}" | \
-        while IFS="|" read -r fd level line ; do
-            if [ -n "${level}" ]; then
-                printf "%8s| %s\n" "*${level}*" "${line}"
-            else
-                printf "%8s| %s\n" "" "${line}"
-            fi
-        done
-        printf "\nFor more information, try to run %s in debug mode, see \`%s -h\`\n" "${NAME}" "$(basename "$0")"
-    ) > "${LOG_REPORT}"
-
-    if [ -n "${MAILADDR}" ]; then
-        mail -s "${NAME} issues on ${HOSTNAME}" "${MAILADDR}" < "${LOG_REPORT}"
-    else
-        cat "${LOG_REPORT}"
-    fi
-fi
+reporting
+RC=${?}
 # }}}
 
 # {{{ Cleanup and exit()

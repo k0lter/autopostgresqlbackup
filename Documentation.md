@@ -80,6 +80,12 @@ Email Address to send errors to. If empty errors are displayed on stdout.
 
 **default**: `root`
 
+### REPORT_ERRORS_ONLY
+
+Send email to `MAILADDR` only if there are errors
+
+**default**: `yes`
+
 ### DBENGINE
 
 Database engine
