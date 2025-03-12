@@ -817,10 +817,6 @@ done
 setup_io
 # }}}
 
-# {{{ Setup runtime settings
-setup
-# }}}
-
 # {{{ Config file loading
 CONFIG_N=0
 if [ -d "${CONFIG}" ]; then
@@ -831,7 +827,6 @@ if [ -f "${CONFIG_COMPAT}" ]; then
     log_debug "Loading config '${CONFIG}' (for backward compatibility)"
     # shellcheck source=/dev/null
     . "${CONFIG_COMPAT}"
-    setup
 elif [ "${CONFIG_N}" -gt 0 ]; then
     CMD="$(readlink -f "${0}")"
     CMD_ARGS=()
@@ -850,7 +845,6 @@ elif [ -f "${CONFIG}" ]; then
     log_debug "Loading config '${CONFIG}'"
     # shellcheck source=/dev/null
     . "${CONFIG}"
-    setup
 else
     log_error "${NAME}: config file or directory '${CONFIG}' does not exists or directory '${CONFIG}' does not contains any configuration files."
     reporting
@@ -858,6 +852,10 @@ else
     cleanup
     exit 1
 fi
+# }}}
+
+# {{{ Setup runtime settings
+setup
 # }}}
 
 # {{{ PreBackup
