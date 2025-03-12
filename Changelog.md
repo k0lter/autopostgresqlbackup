@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 2.4
+
+* Fix runtime environment (backup directories created too early) (Closes: [#43](https://github.com/k0lter/autopostgresqlbackup/issues/43)
+
 ## Version 2.3
 
 * Add `REPORT_ERRORS_ONLY` (default: `yes`) configuration variable. Set it to `no` permits to receive a backup report even if there are no errors. (Closes: [#35](https://github.com/k0lter/autopostgresqlbackup/issues/35))
