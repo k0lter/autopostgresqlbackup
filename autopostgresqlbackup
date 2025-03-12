@@ -672,6 +672,15 @@ setup() {
     LOG_FILE="${LOG_PREFIX}.log"
     LOG_REPORT="${LOG_PREFIX}.report"
 
+    HOST="${DBHOST}:${DBPORT}"
+    if [ "${DBHOST}" = "localhost" ]; then
+        HOST="${HOSTNAME}:${DBPORT} (socket)"
+    fi
+}
+# }}}
+
+# {{{ prepare_backupdir()
+prepare_backupdir() {
     # Create required directories
     if [ ! -e "${BACKUPDIR}" ]; then         # Check Backup Directory exists.
         mkdir -p "${BACKUPDIR}"
@@ -688,12 +697,6 @@ setup() {
     if [ ! -e "${BACKUPDIR}/monthly" ]; then # Check Monthly Directory exists.
         mkdir -p "${BACKUPDIR}/monthly"
     fi
-
-    HOST="${DBHOST}:${DBPORT}"
-    if [ "${DBHOST}" = "localhost" ]; then
-        HOST="${HOSTNAME}:${DBPORT} (socket)"
-    fi
-
 }
 # }}}
 
@@ -817,6 +820,10 @@ done
 setup_io
 # }}}
 
+# {{{ Setup runtime settings
+setup
+# }}}
+
 # {{{ Config file loading
 CONFIG_N=0
 if [ -d "${CONFIG}" ]; then
@@ -824,9 +831,10 @@ if [ -d "${CONFIG}" ]; then
 fi
 
 if [ -f "${CONFIG_COMPAT}" ]; then
-    log_debug "Loading config '${CONFIG}' (for backward compatibility)"
+    log_debug "Loading config '${CONFIG_COMPAT}' (for backward compatibility)"
     # shellcheck source=/dev/null
     . "${CONFIG_COMPAT}"
+    setup
 elif [ "${CONFIG_N}" -gt 0 ]; then
     CMD="$(readlink -f "${0}")"
     CMD_ARGS=()
@@ -845,6 +853,7 @@ elif [ -f "${CONFIG}" ]; then
     log_debug "Loading config '${CONFIG}'"
     # shellcheck source=/dev/null
     . "${CONFIG}"
+    setup
 else
     log_error "${NAME}: config file or directory '${CONFIG}' does not exists or directory '${CONFIG}' does not contains any configuration files."
     reporting
@@ -854,8 +863,8 @@ else
 fi
 # }}}
 
-# {{{ Setup runtime settings
-setup
+# {{{ Create backup directories
+prepare_backupdir
 # }}}
 
 # {{{ PreBackup
