@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 2.5
+
+* fix runtime environment by creating backup directories separately (Closes: [#43](https://github.com/k0lter/autopostgresqlbackup/issues/43)
+
 ## Version 2.4
 
 * Fix runtime environment (backup directories created too early) (Closes: [#43](https://github.com/k0lter/autopostgresqlbackup/issues/43)
