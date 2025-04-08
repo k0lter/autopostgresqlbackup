@@ -266,6 +266,14 @@ Options string for use with pg_dump (see
 [pg_dump](https://www.postgresql.org/docs/current/app-pgdump.html) manual
 page).
 
+If this string contains the option to use the directory dump format of
+pg_dump, the resulting file will be a tarball of the directory that
+pg_dump creates.
+
+Note that by default pg_dump uses gzip zo compress the files it writes
+into this directory. Use the pg_dump option to change this, the COMP
+variable of this script is not used for directory format dumps!
+
 **default**: `""` (empty)
 
 *Only while using PostgreSQL database engine*

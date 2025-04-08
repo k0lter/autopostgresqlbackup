@@ -369,6 +369,10 @@ postgresqldb_dump () {
     local db_name cmd_prog cmd_args pg_args
 
     db_name="${1}"
+    # Only needed here when we use directory format, so only check then
+    if [[ ${PGDUMP_OPTS} =~ (-F|--format=)( d|d)(irectory)? ]]; then
+        dump_file="${2:?Missing dump_file}"
+    fi
 
     if [ -n "${PGDUMP_OPTS}" ]; then
         IFS=" " read -r -a PGDUMP_ARGS <<< "${PGDUMP_OPTS}"
@@ -398,6 +402,9 @@ postgresqldb_dump () {
         if [ "${CREATE_DATABASE}" = "yes" ]; then
             pg_args+=(--create)
         fi
+	if [[ ${PGDUMP_OPTS} =~ (-F|--format=)( d|d)(irectory)? ]]; then
+	    pg_args+=(--file "${dump_file}")
+	fi
     fi
 
     if [ "${#CONN_ARGS[@]}" -gt 0 ]; then
@@ -564,7 +571,7 @@ db_list () {
 db_dump () {
     case ${DBENGINE} in
         postgresql|mysql)
-            ${DBENGINE}db_dump "${1}"
+            ${DBENGINE}db_dump "${1}" "${2:-}"
             ;;
         *)
             log_error "Unsupported database engine ${DBENGINE}, check DBENGINE configuration parameter"
@@ -631,7 +638,15 @@ dump() {
         dump_file="${dump_file}${ENCRYPTION_SUFFIX}"
     fi
 
-    if [ -n "${COMP}" ] && [ "${ENCRYPTION}" = "yes" ]; then
+    if [[ ${PGDUMP_OPTS} =~ (-F|--format=)( d|d)(irectory)? ]]; then
+	log_debug "Dumping (${db_name}) using directory format to '${dump_file}'"
+	db_dump "${db_name}" "${dump_file}"
+	# Now move everything into one tarfile, so the one-file-per-backup assumption holds true
+	# Name it with a .tar, as the final name (${dump_file}) exists as a directory entry
+	tar --directory $(dirname "${dump_file}") --transform "s/.${EXT}${comp_ext}//" --create --remove-files "$(basename "${dump_file}")" > "${dump_file}.tar"
+	# And now rename to the expected filename for the backup.
+	mv "${dump_file}.tar" "${dump_file}"
+    elif [ -n "${COMP}" ] && [ "${ENCRYPTION}" = "yes" ]; then
         log_debug "Dumping (${db_name}) +compress +encrypt to '${dump_file}'"
         db_dump "${db_name}" | compression | encryption > "${dump_file}"
     elif [ -n "${COMP}" ]; then
