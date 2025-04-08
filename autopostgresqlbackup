@@ -681,21 +681,31 @@ setup() {
 
 # {{{ prepare_backupdir()
 prepare_backupdir() {
+
+    if [ -n "${SU_USERNAME}" ]; then
+	CREATEUSER=${SU_USERNAME}
+    else
+	CREATEUSER=$(whoami)
+    fi
     # Create required directories
     if [ ! -e "${BACKUPDIR}" ]; then         # Check Backup Directory exists.
         mkdir -p "${BACKUPDIR}"
+	chown "${CREATEUSER}:" "${BACKUPDIR}/monthly"
     fi
 
     if [ ! -e "${BACKUPDIR}/daily" ]; then   # Check Daily Directory exists.
         mkdir -p "${BACKUPDIR}/daily"
+	chown "${CREATEUSER}:" "${BACKUPDIR}/daily"
     fi
 
     if [ ! -e "${BACKUPDIR}/weekly" ]; then  # Check Weekly Directory exists.
         mkdir -p "${BACKUPDIR}/weekly"
+	chown "${CREATEUSER}:" "${BACKUPDIR}/weekly"
     fi
 
     if [ ! -e "${BACKUPDIR}/monthly" ]; then # Check Monthly Directory exists.
         mkdir -p "${BACKUPDIR}/monthly"
+	chown "${CREATEUSER}:" "${BACKUPDIR}/monthly"
     fi
 }
 # }}}
@@ -942,6 +952,9 @@ for db_enc in ${DBNAMES} ; do
     if [ ! -e "${backupdbdir}" ]; then
         log_debug "Creating Backup DB directory '${backupdbdir}'"
         mkdir -p "${backupdbdir}"
+        if [ -n "${SU_USERNAME}" ]; then
+	    chown "${SU_USERNAME}:" "${backupdbdir}"
+	fi
     fi
 
     db_purge "${BACKUPDIR}" "${db_enc}" "${period}" "${rotate}"
