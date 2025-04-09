@@ -370,7 +370,7 @@ postgresqldb_dump () {
 
     db_name="${1}"
     # Only needed here when we use directory format, so only check then
-    if [[ ${PGDUMP_OPTS} =~ (-F|--format=)( d|d)(irectory)? ]]; then
+    if [[ ${db_name} != "${GLOBALS_OBJECTS}" ]] && [[ ${PGDUMP_OPTS} =~ (-F|--format=)( d|d)(irectory)? ]]; then
         dump_file="${2:?Missing dump_file}"
     fi
 
@@ -638,7 +638,7 @@ dump() {
         dump_file="${dump_file}${ENCRYPTION_SUFFIX}"
     fi
 
-    if [[ ${PGDUMP_OPTS} =~ (-F|--format=)( d|d)(irectory)? ]]; then
+    if [[ ${db_name} != "${GLOBALS_OBJECTS}" ]] && [[ ${PGDUMP_OPTS} =~ (-F|--format=)( d|d)(irectory)? ]]; then
 	log_debug "Dumping (${db_name}) using directory format to '${dump_file}'"
 	db_dump "${db_name}" "${dump_file}"
 	# Now move everything into one tarfile, so the one-file-per-backup assumption holds true
