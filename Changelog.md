@@ -24,7 +24,7 @@
 * Add support for MySQL/MariaDB (using the `DBENGINE` configuration parameter).
 * Add a command line option `-c` to specify an alternate config file or directory (see [Documentation](/Documentation.md)).
 * Add manpage
-* Fix hypotetical shell injection by crafting special database names
+* Fix hypothetical shell injection by crafting special database names
 * Variable `OPT` (used with pg_dump) is renamed to `PGDUMP_OPTS` and a new variable `PGDUMPALL_OPTS` is available (used for dump globals with pg_dumpall) (Closes: [#12](https://github.com/k0lter/autopostgresqlbackup/issues/12))
 * Fix stderr capture and check return code while running pg_dump/pg_dumpall commands
 * Add `MIN_DUMP_SIZE` configuration variable to raise a warning when a backup file size is below this limit (Closes: [#15](https://github.com/k0lter/autopostgresqlbackup/issues/15))
@@ -46,6 +46,6 @@
 ### Removed features
 
 * It's no longer possible to dump all databases in a single file
-* Copying the lastest dump in the latest/ directory is no longer supported
-* Specifying the databases names to dump during the montly backup is no longer supported
+* Copying the latest dump in the latest/ directory is no longer supported
+* Specifying the databases names to dump during the monthly backup is no longer supported
 * It is no longer supported to send backup files by email (MAILCONTENT=files). It was anyway probably not a good idea to send backup files by email (for various reasons: file size, privacy, data leaks, etc.) but I guess that it could easily be implemented in a POSTBACKUP script if needed.
