@@ -341,7 +341,7 @@ Encryption public key (path to the key)
 
 ### ENCRYPTION_SUFFIX
 
-Suffix for encyrpted files
+Suffix for encrypted files
 
 **default**: `.enc`
 

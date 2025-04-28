@@ -135,7 +135,7 @@ ENCRYPTION="no"
 # Encryption public key (path to the key)
 ENCRYPTION_PUBLIC_KEY=
 
-# Suffix for encyrpted files
+# Suffix for encrypted files
 ENCRYPTION_SUFFIX=".enc"
 
 # Command or script to execute before backups

@@ -38,7 +38,7 @@ Man page is build from [the documentation](/Documentation.md) using pandoc using
 ## History
 
  * 2023: Almost full rewrite with better error handling and new features (see Changelog.md for details)
- * 2019: Creation of a fork/standelone project on Github (https://github.com/k0lter/autopostgresqlbackup)
+ * 2019: Creation of a fork/standalone project on GitHub (https://github.com/k0lter/autopostgresqlbackup)
  * Since 2011: Various patches (fixes and new features) were added in the Debian package
  * 2011: AutoPostgreSQLBackup was included in Debian
  * 2005: AutoPostgreSQLBackup was written by Aaron Axelsen (with some contributions of Friedrich Lobenstock)
