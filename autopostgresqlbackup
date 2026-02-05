@@ -28,7 +28,7 @@ NAME="AutoPostgreSQLBackup"         # Script name
 VERSION="2.5"                       # Version Number
 DATE="$(date '+%Y-%m-%d_%Hh%Mm')"   # Datestamp e.g 2002-09-21
 DNOW="$(date '+%u')"                # Day number of the week 1 to 7 where 1 represents Monday
-DNOM="$(date '+%d')"                # Date of the Month e.g. 27
+DNOM="$(date '+%-d')"               # Date of the month e.g. 27
 # }}}
 
 # {{{ Variables
