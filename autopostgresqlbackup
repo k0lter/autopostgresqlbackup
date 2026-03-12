@@ -325,6 +325,11 @@ postgresqldb_list () {
         cmd_args+=("${CONN_ARGS[@]}")
     fi
 
+    # If the default database is set, add it to the command line here
+    if [ -n "$DEFAULTDB" ] ; then
+	    cmd_args+=("-d" "$DEFAULTDB")
+    fi
+
     log_debug "Running command: ${cmd_prog} ${cmd_args[*]}"
     raw_dblist=$(
         if [ -n "${SU_USERNAME}" ]; then
