@@ -392,6 +392,12 @@ postgresqldb_dump () {
         cmd_prog="${PGDUMPALL}"
         cmd_args=(--globals-only)
         pg_args=("${PGDUMPALL_ARGS[@]}")
+        if [ -n "${DEFAULTDB}" ]; then
+            pg_args+=(-l "${DEFAULTDB}")
+        fi
+        if [ "${NO_ROLE_PASSWORDS}" = "yes" ]; then
+           pg_args+=(--no-role-passwords)
+        fi
     else
         cmd_prog="${PGDUMP}"
         if [ -n "${SU_USERNAME}" ]; then
