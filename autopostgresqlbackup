@@ -63,6 +63,9 @@ DBHOST="localhost"
 # Port of Database server.
 DBPORT=""
 
+# Default database to connect to
+DBDEFAULT=""
+
 # List of database(s) names(s) to backup.
 DBNAMES="all"
 
@@ -325,6 +328,10 @@ postgresqldb_list () {
         cmd_args+=("${CONN_ARGS[@]}")
     fi
 
+    if [ -n "${DBDEFAULT}" ] ; then
+	    cmd_args+=(-d "${DBDEFAULT}")
+    fi
+
     log_debug "Running command: ${cmd_prog} ${cmd_args[*]}"
     raw_dblist=$(
         if [ -n "${SU_USERNAME}" ]; then
@@ -387,6 +394,9 @@ postgresqldb_dump () {
         cmd_prog="${PGDUMPALL}"
         cmd_args=(--globals-only)
         pg_args=("${PGDUMPALL_ARGS[@]}")
+        if [ -n "${DBDEFAULT}" ] ; then
+            pg_args+=(-l "${DBDEFAULT}")
+        fi
     else
         cmd_prog="${PGDUMP}"
         if [ -n "${SU_USERNAME}" ]; then

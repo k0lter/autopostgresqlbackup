@@ -148,6 +148,15 @@ While using PostgreSQL database engine, it is also used if `DBHOST` is
 
 **default**: `""` (empty, the port to use is automatically defined depending on `DBENGINE`: `5432` for PostgreSQL and `3306` for MySQL)
 
+### DBDEFAULT
+
+Default database to connect to (psql defaults to `postgres`). Override it only
+if the default `postgres` database does not exists.
+
+**default** : `""` (empty)
+
+*Only while using PostgreSQL database engine*
+
 ### DBNAMES
 
 Explicit list of database(s) names(s) to backup
