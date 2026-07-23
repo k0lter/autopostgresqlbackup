@@ -1,8 +1,12 @@
 # Changelog
 
+## Version 2.6
+
+* Fix the day and month comparison so that it is always done using two digits (Closes: [#48](https://github.com/k0lter/autopostgresqlbackup/pull/48)
+
 ## Version 2.5
 
-* fix runtime environment by creating backup directories separately (Closes: [#43](https://github.com/k0lter/autopostgresqlbackup/issues/43)
+* Fix runtime environment by creating backup directories separately (Closes: [#43](https://github.com/k0lter/autopostgresqlbackup/issues/43)
 
 ## Version 2.4
 
