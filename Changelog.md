@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 2.7
+
+* Add a `DBDEFAULT` configuration variable (currently PostgreSQL only) to override the default database (postgres) used when connecting to the server (Closes: [#51](https://github.com/k0lter/autopostgresqlbackup/pull/51)
+
 ## Version 2.6
 
 * Fix the day and month comparison so that it is always done using two digits (Closes: [#48](https://github.com/k0lter/autopostgresqlbackup/pull/48)
