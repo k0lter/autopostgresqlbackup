@@ -915,10 +915,10 @@ if [ "${ENCRYPTION}" = "yes" ]; then
 fi
 
 log_info "Backup Start: $(date)"
-if [ "${DNOM}" = "${DOMONTHLY}" ]; then
+if [ "${DNOM}" = "${DOMONTHLY#0}" ]; then
     period="monthly"
     rotate="${BRMONTHLY}"
-elif [ "${DNOW}" = "${DOWEEKLY}" ]; then
+elif [ "${DNOW}" = "${DOWEEKLY#0}" ]; then
     period="weekly"
     rotate="${BRWEEKLY}"
 else
