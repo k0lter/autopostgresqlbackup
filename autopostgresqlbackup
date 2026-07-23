@@ -573,8 +573,11 @@ db_list () {
 # {{{ db_dump()
 db_dump () {
     case ${DBENGINE} in
-        postgresql|mysql)
-            ${DBENGINE}db_dump "${1}"
+        postgresql)
+            postgresqldb_dump "${1}"
+            ;;
+        mysql)
+            mysqldb_dump "${1}"
             ;;
         *)
             log_error "Unsupported database engine ${DBENGINE}, check DBENGINE configuration parameter"
