@@ -165,6 +165,9 @@ GPG_HOMEDIR=
 # Database connection arguments
 CONN_ARGS=()
 
+# pg_dump major version
+PGDUMP_VERSION_MAJOR=
+
 # Hostname
 HOSTNAME="$(uname -n)"
 if [[ "${HOSTNAME}" != *.* ]]; then
@@ -323,6 +326,9 @@ postgresqldb_init () {
     if [ -z "${PGDUMPALL}" ]; then
         PGDUMPALL="pg_dumpall"
     fi
+
+    PGDUMP_VERSION_MAJOR=$("${PGDUMP}" --version 2>/dev/null | cut -d' ' -f3 | cut -d'.' -f1 || true)
+
     case "${PGDUMP_FORMAT}" in
         tar)
             EXT="tar"
@@ -434,10 +440,18 @@ postgresqldb_dump () {
             else
                 PGDUMP_ARGS+=(-Fc)
             fi
-        
-            FORMAT_COMP="${PGDUMP_FORMAT_COMP}"
-            if [ -n "${PGDUMP_FORMAT_COMP_LEVEL}" ] ; then
-                FORMAT_COMP+=":${PGDUMP_FORMAT_COMP_LEVEL}"
+
+            if [ -n "${PGDUMP_VERSION_MAJOR}" ] && [ "${PGDUMP_VERSION_MAJOR}" -gt 15 ]; then
+                log_info "VERS=${PGDUMP_VERSION_MAJOR}"
+                FORMAT_COMP="${PGDUMP_FORMAT_COMP}"
+                if [ -n "${PGDUMP_FORMAT_COMP_LEVEL}" ] ; then
+                    FORMAT_COMP+=":${PGDUMP_FORMAT_COMP_LEVEL}"
+                fi
+            else
+                log_debug "Falling back to built-in compression (e.g. gzip) for pg_dump <= 15"
+                if [ -n "${PGDUMP_FORMAT_COMP_LEVEL}" ] ; then
+                    FORMAT_COMP="${PGDUMP_FORMAT_COMP_LEVEL}"
+                fi
             fi
             if [ -n "${FORMAT_COMP}" ]; then
                 PGDUMP_ARGS+=(--compress "${FORMAT_COMP}")

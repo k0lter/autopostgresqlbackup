@@ -296,7 +296,9 @@ Output format:
 
 Compression method to use when `PGDUMP_FORMAT` is `custom` or `directory`. Supported values are `gzip`, `lz4`, `zstd`, and `none`.
 
-**default**: `gzip`
+Ignored with `pg_dump` ≤ 15 (not supported). Falling back to the built-in compression method (e.g. gzip).
+
+**default**: `gzip` (built-in)
 
 *Only while using PostgreSQL database engine*
 
