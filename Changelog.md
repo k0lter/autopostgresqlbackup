@@ -2,6 +2,10 @@
 
 ## Version 2.7
 
+* Support multiple `pg_dump` output formats (PostgreSQL):
+  - Add a `PGDUMP_FORMAT` configuration variable to select output format (`plain`, `custom`, `tar` or `directory` are supported)
+  - Add a `PGDUMP_FORMAT_COMP` configuration variable to choose output format compression method (only for `custom` or `directory` output format and `pg_dump` >= 16)
+  - Add a `PGDUMP_FORMAT_COMP_LEVEL` configuration variable to choose output format compression level
 * Add a `DBDEFAULT` configuration variable (currently PostgreSQL only) to override the default database (postgres) used when connecting to the server (Closes: [#51](https://github.com/k0lter/autopostgresqlbackup/pull/51)
 
 ## Version 2.6
