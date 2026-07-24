@@ -22,7 +22,7 @@
 # }}}
 
 # {{{ Constants
-PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/postgres/bin:/usr/local/pgsql/bin
+PATH=/usr/local/bin:/usr/sbin:/usr/bin:/bin:/usr/local/postgres/bin:/usr/local/pgsql/bin
 HOMEPAGE="https://github.com/k0lter/autopostgresqlbackup"
 NAME="AutoPostgreSQLBackup"         # Script name
 VERSION="2.6"                       # Version Number
@@ -131,6 +131,12 @@ MYDUMP=
 
 # Options string for use with mysqldump (see myqldump manual page).
 MYDUMP_OPTS=
+
+# slapcat path (slapcat will be used if empty)
+SLAPCAT=
+
+# Options string for use with slapcat (see slapcat manual page).
+SLAPCAT_OPTS=
 
 # Backup files extension
 EXT="sql"
@@ -613,6 +619,94 @@ mysqldb_dump () {
 }
 # }}}
 
+# {{{ openldapdb_init()
+openldapdb_init () {
+    if [ -z "${SLAPCAT}" ]; then
+        SLAPCAT="slapcat"
+    fi
+}
+# }}}
+
+# {{{ openldapdb_list()
+openldapdb_list () {
+    local cmd_prog cmd_args raw_dblist dblist dbexcl databases
+
+    cmd_prog="${SLAPCAT}"
+    cmd_args=(-n 0)
+
+    if [ -n "${SLAPCAT_OPTS}" ]; then
+        IFS=" " read -r -a SLAPCAT_ARGS <<< "${SLAPCAT_OPTS}"
+    else
+        SLAPCAT_ARGS=()
+    fi
+    cmd_args+=("${SLAPCAT_ARGS[@]}")
+
+    log_debug "Running command: ${cmd_prog} ${cmd_args[*]}"
+    raw_dblist=$(
+        if ! "${cmd_prog}" "${cmd_args[@]}" | sed -En 's/^olcSuffix:\s+(.+)$/\1/p' 2> >(logger "err" "error"); then
+            log_error "Running command '${cmd_prog} ${cmd_args[*]}' has failed"
+        fi
+    )
+
+    read -r -a dblist <<< "$(
+        printf "%s\n" "${raw_dblist}" | \
+            arg_encode | \
+            tr '\n' ' '
+    )"
+    dblist+=(config)
+    log_debug "Automatically found databases: ${dblist[*]}"
+
+    if [ -n "${DBEXCLUDE}" ]; then
+        IFS=" " read -r -a dbexcl <<< "${DBEXCLUDE}"
+    else
+        dbexcl=()
+    fi
+    log_debug "Excluded databases: ${dbexcl[*]}"
+
+    mapfile -t databases < <(
+        comm -23 \
+            <(IFS=$'\n'; echo "${dblist[*]}" | sort) \
+            <(IFS=$'\n'; echo "${dbexcl[*]}" | sort) \
+        )
+    log_debug "Database(s) to be backuped: ${databases[*]}"
+
+    printf "%s " "${databases[@]}"
+}
+# }}}
+
+# {{{ openldapdb_dump()
+openldapdb_dump () {
+    local db_name cmd_prog cmd_args slap_args
+
+    db_name="${1}"
+
+    if [ -n "${SLAPCAT_OPTS}" ]; then
+        IFS=" " read -r -a SLAPCAT_ARGS <<< "${SLAPCAT_OPTS}"
+    else
+        SLAPCAT_ARGS=()
+    fi
+
+    cmd_prog="${SLAPCAT}"
+
+    if [ "${db_name}" = "config" ]; then
+        cmd_args=(-n 0)
+    else
+        cmd_args=(-b "${db_name}")
+    fi
+
+    slap_args=("${SLAPCAT_ARGS[@]}")
+
+    if [ "${#my_args[@]}" -gt 0 ]; then
+        cmd_args+=("${slap_args[@]}")
+    fi
+
+    log_debug "Running command: ${cmd_prog} ${cmd_args[*]}"
+    if ! "${cmd_prog}" "${cmd_args[@]}" 2> >(logger "err" "error"); then
+        log_error "Running command '${cmd_prog} ${cmd_args[*]}' has failed"
+    fi
+}
+# }}}
+
 # {{{ db_init()
 db_init () {
     case ${DBENGINE} in
@@ -622,8 +716,11 @@ db_init () {
         mysql)
             mysqldb_init
             ;;
+        openldap)
+            openldapdb_init
+            ;;
         *)
-            log_error "Unsupported database engine ${DBENGINE}, check DBENGINE configuration parameter"
+            log_error "Unsupported database engine ${DBENGINE} (init), check DBENGINE configuration parameter"
             return 1
             ;;
     esac
@@ -639,8 +736,11 @@ db_list () {
         mysql)
             mysqldb_list
             ;;
+        openldap)
+            openldapdb_list
+            ;;
         *)
-            log_error "Unsupported database engine ${DBENGINE}, check DBENGINE configuration parameter"
+            log_error "Unsupported database engine ${DBENGINE} (list), check DBENGINE configuration parameter"
             return 1
             ;;
     esac
@@ -656,8 +756,11 @@ db_dump () {
         mysql)
             mysqldb_dump "${1}"
             ;;
+        openldap)
+            openldapdb_dump "${1}"
+            ;;
         *)
-            log_error "Unsupported database engine ${DBENGINE}, check DBENGINE configuration parameter"
+            log_error "Unsupported database engine ${DBENGINE} (dump), check DBENGINE configuration parameter"
             return 1
             ;;
     esac
