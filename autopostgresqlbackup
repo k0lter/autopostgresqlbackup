@@ -168,12 +168,6 @@ CONN_ARGS=()
 # pg_dump major version
 PGDUMP_VERSION_MAJOR=
 
-# Hostname
-HOSTNAME="$(uname -n)"
-if [[ "${HOSTNAME}" != *.* ]]; then
-    HOSTNAME="$(hostname --fqdn)"
-fi
-
 # Return Code
 RC=0
 # }}}
@@ -757,8 +751,8 @@ dump() {
 }
 # }}}
 
-# {{{ setup()
-setup() {
+# {{{ setup_logger()
+setup_logger() {
     # Using a shared memory filesystem (if available) to avoid
     # issues when there is no left space on backup storage
     if [ -w "/dev/shm" ]; then
@@ -768,6 +762,16 @@ setup() {
     LOG_PREFIX="${LOG_DIR}/${NAME}_${DBHOST//\//_}-$(date '+%Y-%m-%d_%Hh%Mm')"
     LOG_FILE="${LOG_PREFIX}.log"
     LOG_REPORT="${LOG_PREFIX}.report"
+}
+# }}}
+
+# {{{ setup()
+setup() {
+    # Hostname
+    HOSTNAME="$(uname -n)"
+    if [[ "${HOSTNAME}" != *.* ]]; then
+        HOSTNAME="$(hostname --fqdn)"
+    fi
 
     HOST="${DBHOST}:${DBPORT}"
     if [ "${DBHOST}" = "localhost" ]; then
@@ -911,6 +915,10 @@ while getopts "hdc:" OPTION ; do
             exit 1
     esac
 done
+# }}}
+
+# {{{ Setup logger
+setup_logger
 # }}}
 
 # {{{ I/O redirection(s) for logging
