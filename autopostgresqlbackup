@@ -111,6 +111,15 @@ PGDUMPALL=
 # Options string for use with all_dump (see pg_dump manual page).
 PGDUMP_OPTS=
 
+# Output format (plain, custom, tar or directory)
+PGDUMP_FORMAT="plain"
+
+# Compression method (gzip, lz4, zstd or none) to use when PGDUMP_FORMAT is custom or directory
+PGDUMP_FORMAT_COMP="gzip"
+
+# Compression level (0 to 9) to use with when PGDUMP_FORMAT is custom or directory
+PGDUMP_FORMAT_COMP_LEVEL=
+
 # Options string for use with pg_dumpall (see pg_dumpall manual page).
 PGDUMPALL_OPTS=
 
@@ -314,6 +323,20 @@ postgresqldb_init () {
     if [ -z "${PGDUMPALL}" ]; then
         PGDUMPALL="pg_dumpall"
     fi
+    case "${PGDUMP_FORMAT}" in
+        tar)
+            EXT="tar"
+            ;;
+        custom|directory)
+            if [ "${PGDUMP_FORMAT}" = "directory" ]; then
+                EXT="tar"
+            else
+                EXT="pgdump"
+            fi
+            COMP=""
+            COMP_OPTS=""
+            ;;
+    esac
 }
 # }}}
 
@@ -376,6 +399,8 @@ postgresqldb_dump () {
     local db_name cmd_prog cmd_args pg_args
 
     db_name="${1}"
+    db_file="${2}"
+    db_file_dir="${db_file}.dir"
 
     if [ -n "${PGDUMP_OPTS}" ]; then
         IFS=" " read -r -a PGDUMP_ARGS <<< "${PGDUMP_OPTS}"
@@ -389,6 +414,39 @@ postgresqldb_dump () {
     else
         PGDUMPALL_ARGS=()
     fi
+
+    case "${PGDUMP_FORMAT}" in
+        plain)
+            PGDUMP_ARGS+=(-Fp)
+            ;;
+        tar)
+            PGDUMP_ARGS+=(-Ft)
+            ;;
+        custom|directory)
+            if [ "${PGDUMP_FORMAT}" = "directory" ]; then
+                PGDUMP_ARGS+=(-Fd --file "${db_file_dir}")
+                if [ -n "${SU_USERNAME}" ]; then
+                    db_dir="$(dirname "${db_file}")"
+                    db_dir_grp="$(id -gn "${SU_USERNAME}")"
+                    chgrp "${db_dir_grp}" "${db_dir}"
+                    chmod g+w "${db_dir}"
+                fi
+            else
+                PGDUMP_ARGS+=(-Fc)
+            fi
+        
+            FORMAT_COMP="${PGDUMP_FORMAT_COMP}"
+            if [ -n "${PGDUMP_FORMAT_COMP_LEVEL}" ] ; then
+                FORMAT_COMP+=":${PGDUMP_FORMAT_COMP_LEVEL}"
+            fi
+            if [ -n "${FORMAT_COMP}" ]; then
+                PGDUMP_ARGS+=(--compress "${FORMAT_COMP}")
+            fi
+            ;;
+        *)
+            log_error "Unsupported PGDUMP_FORMAT: ${PGDUMP_FORMAT}"
+            ;;
+    esac
 
     if [ "${db_name}" = "${GLOBALS_OBJECTS}" ]; then
         cmd_prog="${PGDUMPALL}"
@@ -424,6 +482,17 @@ postgresqldb_dump () {
         fi
     elif ! "${cmd_prog}" "${cmd_args[@]}" 2> >(logger "err" "error"); then
         log_error "Running command '${cmd_prog} ${cmd_args[*]}' has failed"
+    fi
+
+    # when PGDUMP_FORMAT is directory, create tar archive on the fly
+    if [ -d "${db_file_dir}" ] ; then
+        cmd_prog="tar"
+        cmd_args=(--directory "${db_file_dir}")
+        cmd_args+=(--create --remove-files)
+        cmd_args+=(--file - .)
+        if ! "${cmd_prog}" "${cmd_args[@]}" 2> >(logger "err" "error"); then
+            log_error "Running command '${cmd_prog} ${cmd_args[*]}' has failed"
+        fi
     fi
 }
 # }}}
@@ -574,7 +643,7 @@ db_list () {
 db_dump () {
     case ${DBENGINE} in
         postgresql)
-            postgresqldb_dump "${1}"
+            postgresqldb_dump "${1}" "${2}"
             ;;
         mysql)
             mysqldb_dump "${1}"
@@ -607,7 +676,7 @@ db_purge() {
         sort -r | \
         sed -E -n 's/\S+ //p' | \
         tail -n "+${count}" | \
-        xargs -L1 rm -fv | \
+        xargs -L1 rm -rfv | \
         while IFS= read -r line ; do
             log_info "${line}"
         done
@@ -620,9 +689,10 @@ dump() {
 
     db_name="${1}"
     dump_file="${2}"
-
+    backup_file="${dump_file}"
+ 
     if [ -n "${COMP}" ]; then
-        comp_ext=".comp"
+        comp_ext=""
         case "${COMP}" in
             gzip|pigz)
                 comp_ext=".gz"
@@ -646,16 +716,16 @@ dump() {
 
     if [ -n "${COMP}" ] && [ "${ENCRYPTION}" = "yes" ]; then
         log_debug "Dumping (${db_name}) +compress +encrypt to '${dump_file}'"
-        db_dump "${db_name}" | compression | encryption > "${dump_file}"
+        db_dump "${db_name}" "${backup_file}" | compression | encryption > "${dump_file}"
     elif [ -n "${COMP}" ]; then
         log_debug "Dumping (${db_name}) +compress to '${dump_file}'"
-        db_dump "${db_name}" | compression > "${dump_file}"
+        db_dump "${db_name}" "${backup_file}" | compression > "${dump_file}"
     elif [ "${ENCRYPTION}" = "yes" ]; then
         log_debug "Dumping (${db_name}) +encrypt to '${dump_file}'"
-        db_dump "${db_name}" | encryption > "${dump_file}"
+        db_dump "${db_name}" "${backup_file}" | encryption > "${dump_file}"
     else
         log_debug "Dumping (${db_name}) to '${dump_file}'"
-        db_dump "${db_name}" > "${dump_file}"
+        db_dump "${db_name}" "${backup_file}" > "${dump_file}"
     fi
 
     if [ -f "${dump_file}" ]; then
@@ -946,6 +1016,10 @@ if [ "${DBNAMES}" = "all" ]; then
     DBNAMES="$(db_list)"
 fi
 
+if [ -n "${EXT}" ]; then
+    EXT=".${EXT}"
+fi
+
 for db_enc in ${DBNAMES} ; do
     db="$(echo "${db_enc}" | arg_decode)"
 
@@ -959,7 +1033,7 @@ for db_enc in ${DBNAMES} ; do
 
     db_purge "${BACKUPDIR}" "${db_enc}" "${period}" "${rotate}"
 
-    backupfile="${backupdbdir}/${db_enc}_${DATE}.${EXT}"
+    backupfile="${backupdbdir}/${db_enc}_${DATE}${EXT}"
     dump "${db}" "${backupfile}"
 done
 log_info "Backup End: $(date)"

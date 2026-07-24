@@ -279,6 +279,35 @@ page).
 
 *Only while using PostgreSQL database engine*
 
+### PGDUMP_FORMAT
+
+Output format:
+
+ - `plain`: plain-text SQL script (default)
+ - `custom`: custom-format archive suitable for use with `pg_restore` (compressed; see `PGDUMP_FORMAT_COMP` and `PGDUMP_FORMAT_COMP_LEVEL`)
+ - `tar`: tar-format archive for use with `pg_restore` (no compression)
+ - `directory`: directory-format archive for use with `pg_restore`, stores each table in a separate file, supports parallel backup/restore, supported compression and encapsulated in a single tar file.
+
+**default**: `plain`
+
+*Only while using PostgreSQL database engine*
+
+### PGDUMP_FORMAT_COMP
+
+Compression method to use when `PGDUMP_FORMAT` is `custom` or `directory`. Supported values are `gzip`, `lz4`, `zstd`, and `none`.
+
+**default**: `gzip`
+
+*Only while using PostgreSQL database engine*
+
+### PGDUMP_FORMAT_COMP_LEVEL
+
+Compression level to use with when `PGDUMP_FORMAT` is `custom` or `directory`: useable values from `0` to `9`.
+
+**default**: `""` (empty)
+
+*Only while using PostgreSQL database engine*
+
 ### PGDUMPALL_OPTS
 
 Options string for use with pg_dumpall (see
